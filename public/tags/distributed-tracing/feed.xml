@@ -11,13 +11,26 @@
       <atom:link href="https://www.signoz.io/tags/distributed-tracing/feed.xml" rel="self" type="application/rss+xml"/>
       
   <item>
+<<<<<<< HEAD
+    <guid>https://www.signoz.io/blog/N+1-query-distributed-tracing</guid>
+    <title>What is N+1 query problem and how distributed tracing solves it?</title>
+    <link>https://www.signoz.io/blog/N+1-query-distributed-tracing</link>
+    undefined
+    <pubDate>Tue, 06 Sep 2022 00:00:00 GMT</pubDate>
+    <author>address@yoursite.com (SigNoz Inc)</author>
+    <category>distributed-tracing</category>
+  </item>
+
+  <item>
+=======
+>>>>>>> main
     <guid>https://www.signoz.io/blog/apm-vs-distributed-tracing</guid>
     <title>How Distributed Tracing augments the APM experience?</title>
     <link>https://www.signoz.io/blog/apm-vs-distributed-tracing</link>
     undefined
     <pubDate>Fri, 25 Mar 2022 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>Distributed Tracing</category>
+    <category>distributed-tracing</category>
   </item>
 
   <item>
@@ -27,7 +40,7 @@
     undefined
     <pubDate>Mon, 03 Apr 2023 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>Distributed Tracing</category>
+    <category>distributed-tracing</category>
   </item>
 
   <item>
@@ -37,7 +50,7 @@
     undefined
     <pubDate>Fri, 08 Sep 2023 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>Distributed Tracing</category>
+    <category>distributed-tracing</category>
   </item>
 
   <item>
@@ -47,7 +60,7 @@
     undefined
     <pubDate>Fri, 01 May 2020 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>Distributed Tracing</category><category>Jaeger</category>
+    <category>distributed-tracing</category><category>Jaeger</category>
   </item>
 
   <item>
@@ -57,7 +70,7 @@
     undefined
     <pubDate>Tue, 18 Jan 2022 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>Distributed Tracing</category><category>Jaeger</category>
+    <category>distributed-tracing</category><category>Jaeger</category>
   </item>
 
   <item>
@@ -67,7 +80,7 @@
     undefined
     <pubDate>Tue, 28 Feb 2023 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>OpenTelemetry Instrumentation</category><category>Java</category><category>Distributed Tracing</category>
+    <category>opentelemetry-instrumentation</category><category>java</category><category>distributed-tracing</category>
   </item>
 
   <item>
@@ -77,7 +90,7 @@
     undefined
     <pubDate>Mon, 10 Oct 2022 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>OpenTelemetry Instrumentation</category><category>JavaScript</category><category>Distributed Tracing</category>
+    <category>opentelemetry-instrumentation</category><category>JavaScript</category><category>distributed-tracing</category>
   </item>
 
   <item>
@@ -87,7 +100,7 @@
     undefined
     <pubDate>Tue, 21 May 2024 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>Distributed Tracing</category>
+    <category>distributed-tracing</category>
   </item>
 
   <item>
@@ -97,7 +110,7 @@
     undefined
     <pubDate>Wed, 24 Jan 2024 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>Distributed Tracing</category>
+    <category>distributed-tracing</category>
   </item>
 
   <item>
@@ -107,7 +120,7 @@
     undefined
     <pubDate>Mon, 02 Jan 2023 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>Distributed Tracing</category><category>Jaeger</category>
+    <category>distributed-tracing</category><category>Jaeger</category>
   </item>
 
   <item>
@@ -127,7 +140,7 @@
     undefined
     <pubDate>Sat, 26 Mar 2022 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>Distributed Tracing</category>
+    <category>distributed-tracing</category>
   </item>
 
   <item>
@@ -137,7 +150,7 @@
     undefined
     <pubDate>Thu, 23 Feb 2023 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>OpenTelemetry</category><category>Distributed Tracing</category>
+    <category>opentelemetry</category><category>distributed-tracing</category>
   </item>
 
   <item>
@@ -147,7 +160,7 @@
     undefined
     <pubDate>Mon, 30 Jan 2023 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>OpenTelemetry</category><category>Distributed Tracing</category>
+    <category>opentelemetry</category><category>distributed-tracing</category>
   </item>
 
   <item>
@@ -157,7 +170,7 @@
     undefined
     <pubDate>Tue, 31 Jan 2023 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>OpenTelemetry</category><category>Distributed Tracing</category>
+    <category>opentelemetry</category><category>distributed-tracing</category>
   </item>
 
   <item>
@@ -167,7 +180,7 @@
     undefined
     <pubDate>Fri, 24 Feb 2023 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>OpenTelemetry</category><category>Distributed Tracing</category>
+    <category>opentelemetry</category><category>distributed-tracing</category>
   </item>
 
   <item>
@@ -177,7 +190,7 @@
     undefined
     <pubDate>Thu, 08 Dec 2022 00:00:00 GMT</pubDate>
     <author>address@yoursite.com (SigNoz Inc)</author>
-    <category>OpenTelemetry</category><category>Distributed Tracing</category>
+    <category>opentelemetry</category><category>distributed-tracing</category>
   </item>
 
     </channel>
