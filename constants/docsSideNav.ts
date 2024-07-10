@@ -942,6 +942,32 @@ const docsSideNav = [
     ],
   },
   {
+    label: 'Ingestion',
+    type: 'category',
+    items: [
+      {
+        type: 'doc',
+        route: '/docs/ingestion/ingestion.mdx',
+        label: 'Overview',
+      },
+      {
+        type: 'doc',
+        route: '/docs/ingestion/ingestion-logs.mdx',
+        label: 'Ingestion Logs',
+      },
+      {
+        type: 'doc',
+        route: '/docs/ingestion/ingestion-traces.mdx',
+        label: 'Ingestion Traces',
+      },
+      {
+        type: 'doc',
+        route: '/docs/ingestion/ingestion-metrics.mdx',
+        label: 'Ingestion Metrics',
+      }
+    ],
+  },
+  {
     label: 'Tutorials',
     type: 'category',
     isExpanded: false,
