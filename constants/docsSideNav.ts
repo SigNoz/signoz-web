@@ -1318,6 +1318,11 @@ const docsSideNav = [
             type: 'doc',
             route: '/docs/gcp-monitoring/gcp-fns/logging',
             label: 'Logging',
+          },
+          {
+            type: 'doc',
+            route: '/docs/gcp-monitoring/gcp-fns/tracing',
+            label: 'Tracing',
           }
         ],
       },
