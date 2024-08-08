@@ -1383,6 +1383,11 @@ const docsSideNav = [
           }
         ],
       },
+      {
+        type: 'doc',
+        route: '/docs/gcp-monitoring/gke-tracing',
+        label: 'Tracing in GKE',
+      },
     ],
   },
   {
