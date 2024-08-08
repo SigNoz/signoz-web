@@ -1369,6 +1369,11 @@ const docsSideNav = [
           }
         ],
       },
+      {
+        type: 'doc',
+        route: '/docs/gcp-monitoring/gke',
+        label: 'GKE',
+      },
     ],
   },
   {
