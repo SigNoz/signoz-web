@@ -1,6 +1,8 @@
 import { Github } from '@/components/social-icons/SolidIcons'
 import Link from 'next/link'
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
 
 const GitHubStars = () => {
   const [stars, setStars] = useState(null)
@@ -39,8 +41,16 @@ const GitHubStars = () => {
     return null
   }
 
+  const router = useRouter()
+
+  const handleClick = () => {
+
+    router.push('https://github.com/SigNoz/signoz')
+    
+  }
+
   return (
-    <Link href="https://github.com/SigNoz/signoz" target="_blank">
+    <Link href="https://github.com/SigNoz/signoz" target="_blank" onClick={handleClick}>
         <div className="-ml-1 box-border flex items-center gap-2 rounded-full bg-signoz_slate-500 py-2 pl-2 pr-2.5 text-signoz_ink-300 h-8">
           <div className="github-icon box-border rounded-full p-1">
             <Github className='fill-signoz_vanilla-100' width={16} />

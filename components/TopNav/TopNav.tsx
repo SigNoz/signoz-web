@@ -13,6 +13,7 @@ import DocsSidebar from '../DocsSidebar/DocsSidebar'
 import { usePathname } from 'next/navigation'
 import Banner from '../Banner/Banner'
 import Tabs from '../../app/resource-center/Shared/Tabs'
+import { useRouter } from 'next/navigation'
 
 enum TABS {
   BLOG = 'blog-tab',
@@ -35,6 +36,15 @@ export default function TopNav() {
   const [showMainMenu, setShowMainMenu] = useState(false)
   const [activeTab, setActiveTab] = useState(TABS.GUIDES);
   const [shouldShowTabs, setShouldShowTabs] = useState(false);
+
+  const router = useRouter()
+
+  const handleClick = () => {
+    setMobileMenuOpen(false);
+
+    router.push('/')
+
+  }
 
   useEffect(() => {
     const isDocsBasePath = pathname.startsWith('/docs')
@@ -66,7 +76,7 @@ export default function TopNav() {
   return (
     <div className="fixed left-0 right-0 z-30">
 
-      <Banner/>
+      <Banner />
 
       <header
         className={`header-bg mx-auto box-border flex h-[56px] w-full items-center border-b border-signoz_slate-500 px-4 text-signoz_vanilla-100 backdrop-blur-[20px] dark:text-signoz_vanilla-100 md:px-8 lg:px-8`}
@@ -79,7 +89,7 @@ export default function TopNav() {
             <Link
               href="/"
               className="-m-1.5 flex items-center gap-2 p-1.5"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={handleClick}
             >
               <Image
                 className="h-5 w-auto"
@@ -141,14 +151,14 @@ export default function TopNav() {
             <SearchButton />
             <GitHubStars />
 
-              <Button
-                id="btn-get-started-website-navbar"
-                className="start-free-trial-btn h-8 pr-3 pl-4 px-4 py-2 rounded-full text-sm flex items-center justify-center gap-1.5 not-italic truncate text-center font-medium leading-5 text-white no-underline outline-none hover:text-white mx-2"
-              >
-            <Link href="/teams" className="flex-center">
+            <Button
+              id="btn-get-started-website-navbar"
+              className="start-free-trial-btn h-8 pr-3 pl-4 px-4 py-2 rounded-full text-sm flex items-center justify-center gap-1.5 not-italic truncate text-center font-medium leading-5 text-white no-underline outline-none hover:text-white mx-2"
+            >
+              <Link href="/teams" className="flex-center">
                 Try SigNoz Cloud <ArrowRight size={14} />
-            </Link>
-              </Button>
+              </Link>
+            </Button>
           </div>
         </nav>
         <Dialog as="div" className="lg:hidden" open={mobileMenuOpen} onClose={setMobileMenuOpen}>
