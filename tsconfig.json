@@ -1,11 +1,16 @@
 {
   "compilerOptions": {
+    "sourceMap": true,
     "incremental": true,
-    "target": "ESNext",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "target": "ES5",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "composite": true,
@@ -14,18 +19,37 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
     "jsx": "preserve",
     "baseUrl": "./",
     "paths": {
-      "@/components/*": ["components/*"],
-      "@/utils/*": ["utils/*"],
-      "@/constants/*": ["constants/*"],
-      "@/data/*": ["data/*"],
-      "@/layouts/*": ["layouts/*"],
-      "@/css/*": ["css/*"],
-      "@/api/*": ["api/*"],
-      "@/hooks/*": ["hooks/*"],
-      "contentlayer/generated": ["./.contentlayer/generated"]
+      "@/components/*": [
+        "components/*"
+      ],
+      "@/utils/*": [
+        "utils/*"
+      ],
+      "@/constants/*": [
+        "constants/*"
+      ],
+      "@/data/*": [
+        "data/*"
+      ],
+      "@/layouts/*": [
+        "layouts/*"
+      ],
+      "@/css/*": [
+        "css/*"
+      ],
+      "@/api/*": [
+        "api/*"
+      ],
+      "@/hooks/*": [
+        "hooks/*"
+      ],
+      "contentlayer/generated": [
+        "./.contentlayer/generated"
+      ]
     },
     "plugins": [
       {
@@ -41,10 +65,12 @@
     "**/*.ts",
     "**/*.tsx",
     "**/*.json",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
     ".contentlayer/generated",
     ".contentlayer/generated/**/*.json",
-    ".next/types/**/*.ts",
-    "docs/shared/get-started-signoz.mdx"
-  ],
-  "exclude": ["node_modules"]
+    ".next/types/**/*.ts"
+  ]
 }
