@@ -72,8 +72,6 @@ const DocsSidebar: React.FC<DocsSidebarProps> = ({ onNavItemClick }) => {
 
     const parents = getParents(docsSideNav, normalizedRoute)
 
-    console.log('parents', parents)
-
     for (const parent of parents) {
       toggleIsExpandedByLabel(parent, true)
     }
@@ -83,8 +81,6 @@ const DocsSidebar: React.FC<DocsSidebarProps> = ({ onNavItemClick }) => {
     rIC(() => {
       const elementId = `#${pathname.substring(0, pathname.length - 1)}`
       const element = document.getElementById(elementId)
-
-      console.log('element', elementId)
 
       if (element) {
         element.scrollIntoView({

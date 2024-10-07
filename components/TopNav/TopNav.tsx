@@ -10,11 +10,13 @@ import SearchButton from '../SearchButton'
 import GitHubStars from '../GithubStars/GithubStars'
 import React from 'react'
 import DocsSidebar from '../DocsSidebar/DocsSidebar'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import Banner from '../Banner/Banner'
 import Tabs from '../../app/resource-center/Shared/Tabs'
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@nextui-org/react'
 import Accordion from '../Accordion/Accordion'
+import { QUERY_PARAMS } from '@/constants/queryParams'
+import { ONBOARDING_SOURCE } from '@/constants/globals'
 
 enum TABS {
   BLOG = 'blog-tab',
@@ -159,6 +161,9 @@ export default function TopNav() {
   const [timeoutIdResources, setTimeoutIdResources] = useState<any>(null)
   const delay = 500
 
+  const searchParams = useSearchParams()
+  const source = searchParams.get(QUERY_PARAMS.SOURCE)
+
   // Product dropdown handlers
   const handleMouseEnterProduct = () => {
     clearTimeout(timeoutId)
@@ -180,6 +185,11 @@ export default function TopNav() {
     const id = setTimeout(() => setIsOpenResources(false), delay)
     setTimeoutIdResources(id)
   }
+
+  if (source === ONBOARDING_SOURCE) {
+    return null
+  }
+
   return (
     <div className="fixed left-0 right-0 z-30">
       <Banner />
