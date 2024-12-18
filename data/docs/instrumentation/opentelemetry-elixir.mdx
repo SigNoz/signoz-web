@@ -3,7 +3,7 @@ date: 2024-06-06
 id: elixir
 title: Elixir Opentelemetry Instrumentation
 description: Send events from your Elixir application to SigNoz
-
+hide_table_of_contents: true
 ---
 
 
@@ -11,6 +11,8 @@ import InstrumentationFAQ from '@/components/shared/instrumentation-faq.md'
 
 This document contains OpenTelemetry instrumentation instructions for Elixir Phoenix + Ecto framework.
 
+<Tabs entityName="plans">
+<TabItem value="cloud" label="SigNoz Cloud" default>
 ## Send Traces to SigNoz Cloud
 
 Based on your application environment, you can choose the setup below to send traces to SigNoz Cloud.
@@ -97,11 +99,13 @@ Depending on the choice of your region for SigNoz cloud, the ingest endpoint wil
 ---
 ### Send traces via OTel Collector binary
 
-OTel Collector binary helps to collect logs, hostmetrics, resource and infra attributes. It is recommended to install Otel Collector binary to collect and send traces to SigNoz cloud. You can correlate signals and have rich contextual data through this way.
+**Step 1.** Install OTel Collector binary<br></br>
 
-You can find instructions to install OTel Collector binary [here](https://signoz.io/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine/) in your VM. Once you are done setting up your OTel Collector binary, you can follow the below steps for instrumenting your Elixir (Phoenix + Ecto) application.
+OTel Collector binary helps to collect logs, hostmetrics, resource and infra attributes.
 
-**Step 1. Add dependencies**
+You can find instructions to install OTel Collector binary [here](https://signoz.io/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine/) in your VM.
+
+**Step 2. Add dependencies**
 
 Install dependencies related to OpenTelemetry by adding them to `mix.exs` file
 
@@ -136,7 +140,7 @@ def start(_type, _args) do
 end
 ```
 
-**Step 2. Configure Application**
+**Step 3. Configure Application**
 
 You need to configure your application to send telemtry data by adding the follwing config to your `runtime.exs` file:
 
@@ -284,11 +288,13 @@ Depending on the choice of your region for SigNoz cloud, the ingest endpoint wil
 ---
 ### Send traces via OTel Collector binary
 
-OTel Collector binary helps to collect logs, hostmetrics, resource and infra attributes. It is recommended to install Otel Collector binary to collect and send traces to SigNoz cloud. You can correlate signals and have rich contextual data through this way.
+**Step 1.** Install OTel Collector binary<br></br>
 
-You can find instructions to install OTel Collector binary [here](https://signoz.io/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine/) in your VM. Once you are done setting up your OTel Collector binary, you can follow the below steps for instrumenting your Elixir (Phoenix + Ecto) application.
+OTel Collector binary helps to collect logs, hostmetrics, resource and infra attributes.
 
-**Step 1. Add dependencies**
+You can find instructions to install OTel Collector binary [here](https://signoz.io/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine/) in your VM.
+
+**Step 2. Add dependencies**
 
 Install dependencies related to OpenTelemetry by adding them to `mix.exs` file
 
@@ -323,7 +329,7 @@ def start(_type, _args) do
 end
 ```
 
-**Step 2. Configure Application**
+**Step 3. Configure Application**
 
 You need to configure your application to send telemtry data by adding the follwing config to your `runtime.exs` file:
 
@@ -345,7 +351,8 @@ config :opentelemetry, :processors,
 </TabItem>
 
 </Tabs>
-
+</TabItem>
+<TabItem value="self-host" label="Self-Host">
 ## Send Traces to Self-Hosted SigNoz
 
 We’ll focus on instrumenting one of the most common combos of the Elixir world: `Phoenix + Ecto`.
@@ -392,6 +399,8 @@ OpentelemetryEcto.setup([:your_app_name, :repo])
 ```
 
 `:your_app_name` should be replaced by your app name and congratulations, you have instrumented your application with OpenTelemetry.
+</TabItem>
+</Tabs>
 
 ## Sample Examples
 

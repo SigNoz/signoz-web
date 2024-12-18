@@ -3,7 +3,7 @@ date: 2024-06-06
 id: springboot
 title: Spring Boot OpenTelemetry Instrumentation
 description: Instrument your Spring Boot application with OpenTelemetry and send data to SigNoz
-
+hide_table_of_contents: true
 ---
 
 
@@ -11,8 +11,9 @@ description: Instrument your Spring Boot application with OpenTelemetry and send
 import InstrumentationFAQ from '@/components/shared/instrumentation-faq.md'
 
 
-This document contains instructions on how to set up OpenTelemetry instrumentation in your Spring Boot applications. OpenTelemetry, also known as OTel for short, is an open source observability framework that can help you generate and collect telemetry data - traces, metrics, and logs from your Spring Boot application.
-
+{/* This document contains instructions on how to set up OpenTelemetry instrumentation in your Spring Boot applications.  */}
+OpenTelemetry, also known as OTel for short, is an open source observability framework that can help you generate and collect telemetry data - traces, metrics, and logs from your Spring Boot application.
+{/* 
 OpenTelemetry Java is the language-specific implementation of OpenTelemetry in Java that can be used to instrument Spring Boot applications.
 
 Once the telemetry data is collected, you can configure an exporter to send the data to SigNoz.
@@ -22,7 +23,7 @@ There are three major steps to using OpenTelemetry:
 - Instrumenting your Spring Boot application with OpenTelemetry
 - Configuring exporter to send data to SigNoz
 - Validating that configuration to ensure that data is being sent as expected.
-
+ */}
 
 <figure data-zoomable align='center'>
     <img src="/img/docs/opentelemetry_java_instrument.webp" alt="OpenTelemetry helps to generate and collect telemetry data from your application which is then sent to an observability backend like SigNoz"/>
@@ -30,7 +31,7 @@ There are three major steps to using OpenTelemetry:
     </figure>
 
 
-There are two types of application instrumentation:
+{/* There are two types of application instrumentation:
 
 - **Auto Instrumentation**<br></br>
 A completely automatic and out of box experience, with minimal code changes. For your Spring Boot application, we recommend getting started with auto instrumentation.
@@ -38,13 +39,15 @@ A completely automatic and out of box experience, with minimal code changes. For
 - **Manual Instrumentation**<br></br>
 It involves writing instrumentation using OpenTelemetry SDK and API manually. You would need to get a handle to an instance of the `OpenTelemetry` interface, acquire a tracer, and create spans manually.
 
-Let’s understand how to download, install, and run OpenTelemetry in a Spring Boot application.
+Let’s understand how to download, install, and run OpenTelemetry in a Spring Boot application. */}
 
 
 ## Requirements
 
 Java 8 or higher
 
+<Tabs entityName="plans">
+<TabItem value="cloud" label="SigNoz Cloud" default>
 ## Send Traces to SigNoz Cloud
 
 OpenTelemetry provides a handy Java JAR agent that can be attached to any Java 8+ application and dynamically injects bytecode to capture telemetry from a number of popular libraries and frameworks.
@@ -93,16 +96,18 @@ In case you encounter an issue where all applications do not get listed in the s
 
 #### Send traces via OTel Collector binary
 
-OTel Collector binary helps to collect logs, hostmetrics, resource and infra attributes. It is recommended to install Otel Collector binary to collect and send traces to SigNoz cloud. You can correlate signals and have rich contextual data through this way.
+**Step 1.** Install OTel Collector binary<br></br>
 
-You can find instructions to install OTel Collector binary [here](https://signoz.io/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine/) in your VM. Once you are done setting up your OTel Collector binary, you can follow the below steps for instrumenting your Java application.
+OTel Collector binary helps to collect logs, hostmetrics, resource and infra attributes.
 
-**Step 1.** Download OTel java binary agent<br></br>
+You can find instructions to install OTel Collector binary [here](https://signoz.io/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine/) in your VM.
+
+**Step 2.** Download OTel java binary agent<br></br>
 ```bash
 wget https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar
 ```
 
-**Step 2.** Run your application<br></br>
+**Step 3.** Run your application<br></br>
 
 ```bash
 java -javaagent:$PWD/opentelemetry-javaagent.jar -jar <myapp>.jar
@@ -187,16 +192,18 @@ In case you encounter an issue where all applications do not get listed in the s
 
 #### Send traces via OTel Collector binary
 
-OTel Collector binary helps to collect logs, hostmetrics, resource and infra attributes. It is recommended to install Otel Collector binary to collect and send traces to SigNoz cloud. You can correlate signals and have rich contextual data through this way.
+**Step 1.** Install OTel Collector binary<br></br>
 
-You can find instructions to install OTel Collector binary [here](https://signoz.io/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine/) in your VM. Once you are done setting up your OTel Collector binary, you can follow the below steps for instrumenting your Java application.
+OTel Collector binary helps to collect logs, hostmetrics, resource and infra attributes.
 
-**Step 1.** Download OTel java binary agent<br></br>
+You can find instructions to install OTel Collector binary [here](https://signoz.io/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine/) in your VM.
+
+**Step 2.** Download OTel java binary agent<br></br>
 ```bash
 wget https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar
 ```
 
-**Step 2.** Run your application<br></br>
+**Step 3.** Run your application<br></br>
 
 ```bash
 java -javaagent:$PWD/opentelemetry-javaagent.jar -jar <myapp>.jar
@@ -210,6 +217,8 @@ In case you encounter an issue where all applications do not get listed in the s
 </TabItem>
 </Tabs>
 
+</TabItem>
+<TabItem value="self-host" label="Self-Host">
 ## Send Traces to Self-Hosted SigNoz
 
 You can use OpenTelemetry Java to send your traces directly to SigNoz. OpenTelemetry provides a **handy Java JAR agent** that can be attached to any Java 8+ application and dynamically injects bytecode to capture telemetry from a number of popular libraries and frameworks. 
@@ -269,6 +278,8 @@ You can use OpenTelemetry Java to send your traces directly to SigNoz. OpenTelem
 If you want to try this instrumentation with a sample Spring Boot application, visit this [GitHub repo](https://github.com/SigNoz/spring-petclinic).
 
 In case you encounter an issue where all applications do not get listed in the services section then please refer to the [troubleshooting section](#troubleshooting-your-installation).
+</TabItem>
+</Tabs>
 
 ## Validating instrumentation by checking for traces
 
@@ -302,7 +313,7 @@ Some instrumentations can produce too many spans and make traces very noisy. For
 - `dropwizard-metrics`, which might create very low-quality metrics data because of the lack of label/attribute support in the Dropwizard metrics API.
 
 To enable them, add the `otel.instrumentation.<name>.enabled` system property: `-Dotel.instrumentation.jdbc-datasource.enabled=true`
-
+{/* 
 ## Manual Instrumentation
 
 For manual instrumentation of Java application, refer to the docs [here](https://opentelemetry.io/docs/instrumentation/java/manual/).
@@ -392,7 +403,7 @@ Span {
 },
 ```
 
-
+ */}
 
 
 
