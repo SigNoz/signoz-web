@@ -1,0 +1,330 @@
+---
+date: 2025-03-03
+id: opentelemetry-temporal-traces
+title: Temporal Traces using OpenTelemetry
+description: Learn how to instrument Temporal applications to send traces to SigNoz using OpenTelemetry
+---
+
+import InstrumentationFAQ from '@/components/shared/instrumentation-faq.md'
+
+[Temporal](https://temporal.io/) is a developer-first, open source platform that ensures your mission-critical code runs as expected. This guide will help you instrument your Temporal applications to send traces to SigNoz using OpenTelemetry.
+
+While Temporal comes with Jaeger tracing configured by default, this guide shows you how to configure your application to use SigNoz instead, providing enhanced observability features and integration with the SigNoz platform.
+
+## Prerequisites
+
+- SigNoz instance (self-hosted or Cloud)
+- Temporal server (self-hosted or Cloud)
+- Java 11+, Go 1.19+, or Node.js 16+ depending on your application
+- Temporal application with Workflows and Activities
+- Temporal CLI
+
+<Tabs>
+<TabItem value="temporal-self-hosted" label="Self-Hosted Temporal" default>
+
+Additional prerequisites for self-hosted Temporal:
+
+1. Install [Temporal CLI](https://github.com/temporalio/cli/releases)
+
+2. Start the development server:
+```bash
+temporal server start-dev --ui-port 8080
+```
+This command starts:
+- Temporal Server on default port 7233
+- Web UI on port 8080 (accessible at http://localhost:8080)
+- Default namespace: "default"
+
+You can also visit the Web UI at http://localhost:8080 to verify the server is running.
+
+<figure data-zoomable align='center'>
+    <img src="/img/docs/instrumentation/temporal-web-ui.webp" alt="Temporal Web UI Dashboard"/>
+    <figcaption><i>Temporal Web UI showing running workflows in the default namespace</i></figcaption>
+</figure>
+
+</TabItem>
+
+<TabItem value="temporal-cloud" label="Temporal Cloud">
+Additional prerequisites for Temporal Cloud:
+- Temporal Cloud account and namespace
+- Credentials and mTLS certificates
+- Configured Temporal Cloud CLI
+
+_Detailed setup documentation coming soon_
+</TabItem>
+</Tabs>
+
+## Sample Application Overview
+
+<Tabs>
+<TabItem value="java" label="Java" default>
+
+We'll use the [Temporal Java samples repository](https://github.com/temporalio/samples-java) which provides example implementations for tracing. The tracing example is located in `core/src/main/java/io/temporal/samples/tracing/`.
+
+### Installation Steps
+
+1. Clone the Sample Repository:
+```bash
+git clone https://github.com/temporalio/samples-java.git
+cd samples-java
+```
+
+2. Add Dependencies to `build.gradle`:
+```gradle
+dependencies {
+    implementation "io.opentelemetry:opentelemetry-exporter-otlp"
+    // Rest of the dependencies
+}
+```
+
+</TabItem>
+
+<TabItem value="typescript" label="TypeScript">
+
+_TypeScript implementation documentation coming soon_
+
+</TabItem>
+
+<TabItem value="go" label="Go">
+
+_Go implementation documentation coming soon_
+
+</TabItem>
+</Tabs>
+
+## Configuration
+
+<Tabs>
+<TabItem value="signoz-self-host" label="Self-Hosted SigNoz" default>
+<Tabs>
+<TabItem value="java" label="Java" default>
+
+### Environment Variables
+
+The minimal required environment variables:
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+export OTEL_SERVICE_NAME=temporal-java-sample
+```
+
+### OpenTelemetry Configuration
+
+Create a `SignozUtils` class to configure OpenTelemetry tracing with SigNoz:
+
+```java:src/main/java/io/temporal/samples/tracing/SignozUtils.java
+package io.temporal.samples.tracing;
+
+import com.google.common.base.Splitter;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class SignozUtils {
+    private static final Logger logger = Logger.getLogger(SignozUtils.class.getName());
+    private static final String DEFAULT_SIGNOZ_ENDPOINT = "http://localhost:4317";
+    private static final String DEFAULT_SERVICE_NAME = "temporal-sample-signoz";
+
+    public static OpenTelemetry getOpenTelemetry() {
+        try {
+            // Get endpoint and service name from environment variables or use defaults
+            String endpoint = System.getenv()
+                .getOrDefault("OTEL_EXPORTER_OTLP_ENDPOINT", DEFAULT_SIGNOZ_ENDPOINT);
+            String serviceName = System.getenv()
+                .getOrDefault("OTEL_SERVICE_NAME", DEFAULT_SERVICE_NAME);
+
+            // Ensure endpoint has http:// prefix
+            if (!endpoint.startsWith("http://") && !endpoint.startsWith("https://")) {
+                endpoint = "http://" + endpoint;
+            }
+
+            logger.info("Configuring OpenTelemetry with endpoint: " + endpoint);
+
+            // Create OTLP exporter
+            OtlpGrpcSpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
+                .setEndpoint(endpoint)
+                .build();
+
+            // Create resource with service name
+            Resource resource = Resource.create(
+                Attributes.of(ResourceAttributes.SERVICE_NAME, serviceName));
+
+            // Add additional resource attributes if provided
+            String resourceAttrs = System.getenv("OTEL_RESOURCE_ATTRIBUTES");
+            if (resourceAttrs != null && !resourceAttrs.isEmpty()) {
+                for (String attr : Splitter.on(',').split(resourceAttrs)) {
+                    List<String> keyValue = Splitter.on('=').splitToList(attr);
+                    if (keyValue.size() == 2) {
+                        resource = resource.merge(Resource.create(
+                            Attributes.of(keyValue.get(0).trim(), keyValue.get(1).trim())));
+                    }
+                }
+            }
+
+            // Configure tracer provider
+            SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
+                .addSpanProcessor(BatchSpanProcessor.builder(spanExporter).build())
+                .setResource(resource)
+                .build();
+
+            // Build and return OpenTelemetry SDK
+            return OpenTelemetrySdk.builder()
+                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+                .setTracerProvider(tracerProvider)
+                .build();
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error configuring OpenTelemetry", e);
+            throw e;
+        }
+    }
+}
+```
+
+### Worker Configuration
+
+Update your Temporal Worker configuration:
+
+```java:src/main/java/io/temporal/samples/tracing/TracingWorker.java
+public class TracingWorker {
+    public static void main(String[] args) {
+        WorkerFactoryOptions factoryOptions = WorkerFactoryOptions.newBuilder()
+            .setOpenTelemetry(SignozUtils.getOpenTelemetry())
+            .build();
+        WorkerFactory factory = WorkerFactory.newInstance(client, factoryOptions);
+
+        // ... rest of worker configuration ...
+    }
+}
+```
+
+### Client Configuration
+
+Update your Workflow Client:
+
+```java:src/main/java/io/temporal/samples/tracing/Starter.java
+public class Starter {
+    public static void main(String[] args) {
+        WorkflowClientOptions clientOptions = WorkflowClientOptions.newBuilder()
+            .setOpenTelemetry(SignozUtils.getOpenTelemetry())
+            .build();
+        WorkflowClient client = WorkflowClient.newInstance(service, clientOptions);
+
+        // ... rest of client configuration ...
+    }
+}
+```
+
+### Running the Application
+
+Start the Worker:
+```bash
+./gradlew -q execute -PmainClass=io.temporal.samples.tracing.TracingWorker
+```
+
+Start the Workflow:
+```bash
+./gradlew -q execute -PmainClass=io.temporal.samples.tracing.Starter
+```
+
+<figure data-zoomable align='center'>
+    <img src="/images/docs/temporal-workflow-execution.png" alt="Temporal Workflow Execution with Traces"/>
+    <figcaption><i>Workflow execution trace showing activities and their durations</i></figcaption>
+</figure>
+
+</TabItem>
+
+<TabItem value="typescript" label="TypeScript">
+
+_TypeScript implementation documentation coming soon_
+
+</TabItem>
+
+<TabItem value="go" label="Go">
+
+_Go implementation documentation coming soon_
+
+</TabItem>
+</Tabs>
+</TabItem>
+
+<TabItem value="signoz-cloud" label="SigNoz Cloud">
+<Tabs>
+<TabItem value="java" label="Java">
+
+### Environment Variables
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT=https://ingest.{region}.signoz.cloud:443
+export OTEL_SERVICE_NAME=temporal-java-sample
+export OTEL_EXPORTER_OTLP_HEADERS="signoz-ingestion-key=SIGNOZ_INGESTION_KEY"
+```
+
+_Detailed implementation documentation coming soon_
+
+</TabItem>
+
+<TabItem value="typescript" label="TypeScript">
+
+_TypeScript implementation documentation coming soon_
+
+</TabItem>
+
+<TabItem value="go" label="Go">
+
+_Go implementation documentation coming soon_
+
+</TabItem>
+</Tabs>
+</TabItem>
+</Tabs>
+
+## Viewing Traces
+
+Once configured:
+1. Start your Temporal application
+2. Execute some workflows
+3. Open your SigNoz dashboard
+4. Navigate to the Traces view
+5. Look for traces from your service
+
+<figure data-zoomable align='center'>
+    <img src="/images/docs/signoz-temporal-traces.png" alt="SigNoz Temporal Traces Dashboard"/>
+    <figcaption><i>Distributed traces from Temporal workflows in SigNoz UI</i></figcaption>
+</figure>
+
+<figure data-zoomable align='center'>
+    <img src="/images/docs/signoz-temporal-trace-detail.png" alt="Detailed Temporal Trace View"/>
+    <figcaption><i>Detailed view of a workflow trace with execution context and spans</i></figcaption>
+</figure>
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Traces Not Appearing**
+   - Verify endpoint configuration
+   - Check application logs for OpenTelemetry initialization errors
+   - Ensure W3C context propagation is properly configured
+
+2. **Connection Issues**
+   - Ensure the endpoint includes the protocol (http:// or https://)
+   - For SigNoz Cloud, use the appropriate region URL
+   - Check network connectivity and firewall settings
+
+3. **Resource Attribution**
+   - Service name must be set either via environment variable or code
+   - Environment should be specified for proper trace categorization
+
+For more details, see the complete implementation in the [Temporal Java samples repository](https://github.com/temporalio/samples-java/tree/main/core/src/main/java/io/temporal/samples/tracing).
+
+<InstrumentationFAQ />
