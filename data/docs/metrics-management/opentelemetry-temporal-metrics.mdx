@@ -1,0 +1,105 @@
+---
+id: opentelemetry-temporal-metrics
+title: Temporal Metrics using OpenTelemetry
+description: Learn how to instrument Temporal applications to send metrics to SigNoz using OpenTelemetry
+---
+
+This guide shows how to send Temporal metrics to SigNoz using OpenTelemetry, based on the [Temporal Java samples repository](https://github.com/temporalio/samples-java).
+
+## Prerequisites
+
+- A running Temporal server
+- Access to a SigNoz instance
+- Java 8 or later
+- Gradle build system
+
+## Installation
+
+1. Add the required dependencies to your `build.gradle`:
+
+```gradle
+dependencies {
+    implementation "io.opentelemetry:opentelemetry-exporter-otlp-metrics:1.14.0"
+    implementation "io.opentelemetry:opentelemetry-sdk-metrics"
+}
+```
+
+2. Create the `SignozMetricsUtils` class:
+
+```java
+package io.temporal.samples.metrics;
+
+import com.uber.m3.tally.RootScopeBuilder;
+import com.uber.m3.tally.Scope;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
+import io.temporal.common.reporter.MicrometerClientStatsReporter;
+
+public class SignozMetricsUtils {
+    private static final String DEFAULT_SIGNOZ_ENDPOINT = "http://localhost:4317";
+
+    public static Scope getSignozMetricsScope() {
+        // Configure OTLP metric exporter
+        OtlpGrpcMetricExporter metricExporter = OtlpGrpcMetricExporter.builder()
+            .setEndpoint(System.getenv()
+                .getOrDefault("OTEL_EXPORTER_OTLP_ENDPOINT", DEFAULT_SIGNOZ_ENDPOINT))
+            .build();
+
+        // Create metric reader
+        PeriodicMetricReader metricReader = PeriodicMetricReader.builder(metricExporter)
+            .setInterval(Duration.ofSeconds(1))
+            .build();
+
+        // Configure meter provider
+        SdkMeterProvider meterProvider = SdkMeterProvider.builder()
+            .registerMetricReader(metricReader)
+            .build();
+
+        // Create and return metrics scope
+        return new RootScopeBuilder()
+            .reporter(new MicrometerClientStatsReporter(new SimpleMeterRegistry()))
+            .reportEvery(Duration.ofSeconds(1));
+    }
+}
+```
+
+3. Update your Temporal services to use the metrics scope:
+
+```java
+// In your Worker/Starter setup
+WorkflowServiceStubsOptions stubOptions = WorkflowServiceStubsOptions.newBuilder()
+    .setMetricsScope(SignozMetricsUtils.getSignozMetricsScope())
+    .build();
+
+WorkflowServiceStubs service = WorkflowServiceStubs.newServiceStubs(stubOptions);
+```
+
+## Configuration
+
+### Environment Variables
+
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: SigNoz endpoint (default: `http://localhost:4317`)
+- `OTEL_RESOURCE_ATTRIBUTES`: Additional resource attributes
+
+### System Properties
+
+```java
+System.setProperty("otel.metrics.exporter", "otlp");
+System.setProperty("otel.exporter.otlp.protocol", "grpc");
+System.setProperty("otel.exporter.otlp.endpoint", endpoint);
+System.setProperty("otel.traces.exporter", "none");
+System.setProperty("otel.logs.exporter", "none");
+System.setProperty("otel.metric.export.interval", "1000");
+```
+
+## Viewing Metrics
+
+1. Start your Temporal application
+2. Execute some workflows
+3. Open your SigNoz dashboard
+4. Navigate to the Metrics view
+5. Look for metrics with the "temporal_" prefix
+
+For the complete implementation, see the [metrics example](https://github.com/temporalio/samples-java/tree/main/core/src/main/java/io/temporal/samples/metrics) in the Temporal Java samples repository.

@@ -269,6 +269,18 @@ const docsSideNav = [
           },
           {
             type: 'doc',
+            label: 'Temporal Traces',
+            route: '/docs/instrumentation/opentelemetry-temporal-traces',
+            className: 'new-doc'
+          },
+          {
+            type: 'doc',
+            label: 'Temporal Metrics',
+            route: '/docs/metrics-management/opentelemetry-temporal-metrics',
+            className: 'new-doc'
+          },
+          {
+            type: 'doc',
             label: 'Golang',
             route: '/docs/instrumentation/golang',
           },
