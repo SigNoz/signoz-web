@@ -1,0 +1,1142 @@
+---
+date: 2025-03-03
+id: opentelemetry-temporal-traces
+title: Temporal Traces using OpenTelemetry
+description: Learn how to instrument Temporal applications to send traces to SigNoz using OpenTelemetry
+---
+
+import InstrumentationFAQ from '@/components/shared/instrumentation-faq.md'
+
+This document contains instructions on how to set up OpenTelemetry instrumentation in your Temporal applications and view your application traces in SigNoz.
+
+## Requirements
+
+- Temporal server (self-hosted or Cloud)
+- Java 11+, Go 1.19+, or Node.js 16+ depending on your application
+- Temporal application
+
+## Temporal Server Setup
+
+<Tabs>
+<TabItem value="temporal-self-hosted" label="Self-Hosted Temporal" default>
+
+1. Install [Temporal CLI](https://github.com/temporalio/cli/releases)
+
+2. Start the development server:
+```bash
+temporal server start-dev --ui-port 8080
+```
+
+This starts:
+- Temporal Server on port 7233
+- Web UI on port 8080 (http://localhost:8080)
+- Default namespace: "default"
+
+<figure data-zoomable align='center'>
+    <img src="/img/docs/instrumentation/temporal-self-hosted-ui.webp" alt="Temporal Web UI Dashboard"/>
+    <figcaption><i>Temporal Self-Hosted UI</i></figcaption>
+</figure>
+
+<figure data-zoomable align='center'>
+    <img src="/img/docs/instrumentation/temporal-self-hosted-traces.webp" alt="Temporal Traces"/>
+    <figcaption><i>Temporal Traces</i></figcaption>
+</figure>
+
+</TabItem>
+
+<TabItem value="temporal-cloud" label="Temporal Cloud">
+
+1. Install [Temporal CLI](https://github.com/temporalio/cli/releases)
+
+2. **Generate mTLS Certificate**
+- Go to Temporal Cloud Console and follow the [generation instructions](https://docs.temporal.io/cloud/certificates) or use your own certificates following [Temporal's requirements](https://docs.temporal.io/cloud/certificates#certificate-requirements)
+
+3. **Create Namespace**
+- Create a namespace in Temporal Cloud Console (e.g., default, dev-namespace, prod-namespace)
+
+4. **Verify Connection**
+```bash
+temporal workflow list \
+  --address <namespace>.<account_id>.tmprl.cloud:7233 \
+  --namespace <namespace>.<account_id> \
+  --tls-cert-path <cert.pem> \
+  --tls-key-path <cert.key>
+```
+This command should return an empty response for a new namespace.
+
+5. **Configure Environment**
+```bash
+# Temporal Cloud
+export TEMPORAL_HOST_URL=<namespace>.<account_id>.tmprl.cloud:7233
+export TEMPORAL_NAMESPACE=<namespace>.<account_id>
+export TEMPORAL_TLS_CERT=<cert.pem>
+export TEMPORAL_TLS_KEY=<cert.key>
+```
+
+<figure data-zoomable align='center'>
+    <img src="/img/docs/instrumentation/temporal-cloud-ui.webp" alt="Temporal Cloud UI Dashboard"/>
+    <figcaption><i>Temporal Cloud UI</i></figcaption>
+</figure>
+
+<figure data-zoomable align='center'>
+    <img src="/img/docs/instrumentation/temporal-cloud-traces.webp" alt="Temporal Cloud Traces"/>
+    <figcaption><i>Temporal Cloud Traces</i></figcaption>
+</figure>
+</TabItem>
+</Tabs>
+
+## Implementation
+
+<Tabs>
+<TabItem value="signoz-self-host" label="Self-Hosted SigNoz" default>
+<Tabs>
+<TabItem value="java" label="Java" default>
+
+### Step 1: Add OpenTelemetry Dependencies
+
+Add to your `pom.xml`:
+
+```xml
+<properties>
+    <opentelemetry.version>1.34.1</opentelemetry.version>
+    <temporal.version>1.24.1</temporal.version>
+</properties>
+
+<dependencies>
+    <!-- Temporal -->
+    <dependency>
+        <groupId>io.temporal</groupId>
+        <artifactId>temporal-sdk</artifactId>
+        <version>${temporal.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.temporal</groupId>
+        <artifactId>temporal-opentracing</artifactId>
+        <version>${temporal.version}</version>
+    </dependency>
+
+    <!-- OpenTelemetry -->
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-api</artifactId>
+        <version>${opentelemetry.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-sdk</artifactId>
+        <version>${opentelemetry.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-exporter-otlp</artifactId>
+        <version>${opentelemetry.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-extension-trace-propagators</artifactId>
+        <version>${opentelemetry.version}</version>
+    </dependency>
+</dependencies>
+```
+
+### Step 2: Configure OpenTelemetry
+
+Create `SignozTelemetryUtils.java` to configure OpenTelemetry with SigNoz OTLP exporter, trace propagation, and Temporal interceptors:
+
+```java:src/main/java/helloworld/config/SignozTelemetryUtils.java
+package helloworld.config;
+
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.temporal.common.interceptors.WorkerInterceptor;
+import io.temporal.common.interceptors.WorkflowClientInterceptor;
+import com.uber.m3.tally.Scope;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public final class SignozTelemetryUtils {
+    private static final Logger logger = Logger.getLogger(SignozTelemetryUtils.class.getName());
+    private static volatile boolean isInitialized = false;
+    private static volatile Tracer tracer;
+    private static volatile Meter meter;
+
+    public static synchronized void initializeTelemetry() {
+        if (isInitialized) {
+            logger.info("OpenTelemetry already initialized");
+            return;
+        }
+
+        try {
+            logger.info("Configuring OpenTelemetry with endpoint: " + OpenTelemetryConfig.getEndpoint());
+
+            System.setProperty("otel.exporter.otlp.protocol", "grpc");
+            System.setProperty("otel.exporter.otlp.endpoint", OpenTelemetryConfig.getEndpoint());
+
+            OpenTelemetrySdk sdk = OpenTelemetrySdk.builder()
+                .setTracerProvider(TracingExporter.createTracerProvider())
+                .setMeterProvider(MetricsExporter.createMeterProvider())
+                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+                .build();
+
+            OpenTelemetryConfig.setOpenTelemetry(sdk);
+            isInitialized = true;
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    logger.info("Starting OpenTelemetry shutdown...");
+                    TracingExporter.shutdown();
+                    MetricsExporter.shutdown();
+                    logger.info("OpenTelemetry shutdown completed");
+                } catch (Exception e) {
+                    logger.log(Level.SEVERE, "Error during OpenTelemetry shutdown", e);
+                }
+            }));
+
+            logger.info("OpenTelemetry initialized successfully");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error configuring OpenTelemetry", e);
+            throw new RuntimeException("Failed to configure OpenTelemetry", e);
+        }
+    }
+
+    public static OpenTelemetry getOpenTelemetry() {
+        ensureInitialized();
+        return OpenTelemetryConfig.getOpenTelemetry();
+    }
+
+    public static synchronized Tracer getTracer() {
+        if (tracer == null) {
+            tracer = getOpenTelemetry().getTracer(SignozTelemetryUtils.class.getName());
+        }
+        return tracer;
+    }
+
+    public static synchronized Meter getMeter() {
+        if (meter == null) {
+            meter = getOpenTelemetry().getMeter(SignozTelemetryUtils.class.getName());
+        }
+        return meter;
+    }
+
+    public static Scope getMetricsScope() {
+        ensureInitialized();
+        return MetricsExporter.getMetricsScope();
+    }
+
+    public static WorkerInterceptor getWorkerInterceptor() {
+        ensureInitialized();
+        return TracingExporter.getWorkerInterceptor();
+    }
+
+    public static WorkflowClientInterceptor getClientInterceptor() {
+        ensureInitialized();
+        return TracingExporter.getClientInterceptor();
+    }
+
+    private static void ensureInitialized() {
+        if (!isInitialized) {
+            throw new IllegalStateException("OpenTelemetry not initialized. Call initializeTelemetry() first.");
+        }
+    }
+
+    private SignozTelemetryUtils() {
+    }
+}
+```
+
+### Step 3: Configure OpenTelemetry Settings
+
+Create `OpenTelemetryConfig.java` to manage OpenTelemetry configuration including service attributes, resource settings, and endpoint configuration. This class will be used by the telemetry utilities to initialize the OpenTelemetry SDK.
+
+```java:src/main/java/helloworld/config/OpenTelemetryConfig.java
+package helloworld.config;
+
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.resources.Resource;
+import java.util.logging.Logger;
+
+public final class OpenTelemetryConfig {
+    private static final Logger logger = Logger.getLogger(OpenTelemetryConfig.class.getName());
+
+    public static final String DEFAULT_SIGNOZ_ENDPOINT = "http://localhost:4317";
+
+    public static final AttributeKey<String> SERVICE_NAMESPACE = AttributeKey.stringKey("service.namespace");
+    public static final AttributeKey<String> DEPLOYMENT_ENVIRONMENT = AttributeKey.stringKey("deployment.environment");
+
+    private static final String ENV_OTEL_ENDPOINT = "OTEL_EXPORTER_OTLP_ENDPOINT";
+    private static final String ENV_ENVIRONMENT = "OTEL_ENVIRONMENT";
+
+    private static volatile OpenTelemetry openTelemetry;
+
+    public static OpenTelemetry getOpenTelemetry() {
+        if (openTelemetry == null) {
+            throw new IllegalStateException("OpenTelemetry not initialized. Call initialize() first.");
+        }
+        return openTelemetry;
+    }
+
+    public static Resource createResource() {
+        String environment = System.getenv().getOrDefault(ENV_ENVIRONMENT, "development");
+
+        Resource baseResource = Resource.getDefault();
+        Resource customResource = Resource.create(Attributes.of(
+            SERVICE_NAMESPACE, "default",
+            DEPLOYMENT_ENVIRONMENT, environment
+        ));
+
+        logger.info("Creating resource with environment: " + environment);
+        return baseResource.merge(customResource);
+    }
+
+    public static String getEndpoint() {
+        return System.getenv().getOrDefault(ENV_OTEL_ENDPOINT, DEFAULT_SIGNOZ_ENDPOINT);
+    }
+
+    protected static synchronized void setOpenTelemetry(OpenTelemetrySdk sdk) {
+        if (openTelemetry != null) {
+            throw new IllegalStateException("OpenTelemetry already initialized");
+        }
+        openTelemetry = sdk;
+    }
+
+    private OpenTelemetryConfig() {
+    }
+}
+```
+
+### Step 4: Set Up Trace Export
+
+Create `TracingExporter.java` to configure trace export to SigNoz with OTLP/gRPC, batch processing, and Temporal tracing:
+
+```java:src/main/java/helloworld/config/TracingExporter.java
+package helloworld.config;
+
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import io.temporal.common.interceptors.WorkerInterceptor;
+import io.temporal.common.interceptors.WorkflowClientInterceptor;
+import io.temporal.opentracing.OpenTracingClientInterceptor;
+import io.temporal.opentracing.OpenTracingOptions;
+import io.temporal.opentracing.OpenTracingSpanContextCodec;
+import io.temporal.opentracing.OpenTracingWorkerInterceptor;
+import io.opentelemetry.opentracingshim.OpenTracingShim;
+import java.util.logging.Logger;
+import java.util.concurrent.TimeUnit;
+
+public class TracingExporter {
+    private static final Logger logger = Logger.getLogger(TracingExporter.class.getName());
+    private static OpenTracingOptions openTracingOptions;
+    private static BatchSpanProcessor spanProcessor;
+
+    public static synchronized OpenTracingOptions getOpenTracingOptions() {
+        if (openTracingOptions == null) {
+            openTracingOptions = OpenTracingOptions.newBuilder()
+                .setTracer(OpenTracingShim.createTracerShim(OpenTelemetryConfig.getOpenTelemetry()))
+                .setSpanContextCodec(OpenTracingSpanContextCodec.TEXT_MAP_CODEC)
+                .build();
+        }
+        return openTracingOptions;
+    }
+
+    public static WorkerInterceptor getWorkerInterceptor() {
+        return new OpenTracingWorkerInterceptor(getOpenTracingOptions());
+    }
+
+    public static WorkflowClientInterceptor getClientInterceptor() {
+        return new OpenTracingClientInterceptor(getOpenTracingOptions());
+    }
+
+    public static SdkTracerProvider createTracerProvider() {
+        String endpoint = OpenTelemetryConfig.getEndpoint();
+
+        OtlpGrpcSpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
+            .setEndpoint(endpoint)
+            .addHeader("signoz-debug", "true")
+            .setTimeout(java.time.Duration.ofSeconds(30))
+            .build();
+
+        spanProcessor = BatchSpanProcessor.builder(spanExporter)
+            .setScheduleDelay(java.time.Duration.ofMillis(100))
+            .setMaxQueueSize(2048)
+            .setMaxExportBatchSize(512)
+            .build();
+
+        return SdkTracerProvider.builder()
+            .addSpanProcessor(spanProcessor)
+            .setResource(OpenTelemetryConfig.createResource())
+            .build();
+    }
+
+    public static void shutdown() {
+        if (spanProcessor != null) {
+            try {
+                logger.info("Shutting down span processor...");
+                spanProcessor.forceFlush().join(10, TimeUnit.SECONDS);
+                spanProcessor.shutdown().join(10, TimeUnit.SECONDS);
+                logger.info("Span processor shutdown completed");
+            } catch (Exception e) {
+                logger.severe("Error during span processor shutdown: " + e.getMessage());
+            }
+        }
+    }
+
+    private TracingExporter() {
+    }
+}
+```
+
+### Step 5: Configure Worker with Tracing
+
+Update your Temporal Worker to use the initialize OpenTelemetry for traces:
+
+```java:src/main/java/helloworld/workers/HelloWorldWorker.java
+package helloworld.workers;
+
+import helloworld.config.TemporalConfig;
+import helloworld.config.SignozTelemetryUtils;
+import helloworld.workflows.impl.HelloWorldWorkflowImpl;
+import io.temporal.worker.Worker;
+import io.temporal.worker.WorkerFactory;
+import io.temporal.worker.WorkerFactoryOptions;
+import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowClientOptions;
+import io.temporal.serviceclient.WorkflowServiceStubsOptions;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
+public class HelloWorldWorker implements AutoCloseable {
+    private static final Logger logger = Logger.getLogger(HelloWorldWorker.class.getName());
+    private final WorkerFactory factory;
+    private final Worker worker;
+
+    public HelloWorldWorker() {
+        try {
+            // Initialize OpenTelemetry with SigNoz configuration
+            SignozTelemetryUtils.initializeTelemetry();
+            logger.info("OpenTelemetry initialized successfully");
+
+            // Configure service stubs with metrics
+            WorkflowServiceStubsOptions stubOptions = WorkflowServiceStubsOptions.newBuilder()
+                .setMetricsScope(SignozTelemetryUtils.getMetricsScope())
+                .build();
+
+            // Configure worker factory with tracing interceptor
+            WorkerFactoryOptions factoryOptions = WorkerFactoryOptions.newBuilder()
+                .setWorkerInterceptors(SignozTelemetryUtils.getWorkerInterceptor())
+                .build();
+
+            // Create workflow client with tracing interceptor
+            WorkflowClient client = WorkflowClient.newInstance(
+                TemporalConfig.getWorkflowServiceStubs(stubOptions),
+                WorkflowClientOptions.newBuilder()
+                    .setInterceptors(SignozTelemetryUtils.getClientInterceptor())
+                    .build()
+            );
+
+            // Create factory with configured options
+            this.factory = WorkerFactory.newInstance(client, factoryOptions);
+
+            // Create and configure worker
+            this.worker = factory.newWorker(TemporalConfig.getTaskQueue());
+            this.worker.registerWorkflowImplementationTypes(HelloWorldWorkflowImpl.class);
+            this.worker.registerActivitiesImplementations(new HelloWorldActivityImpl());
+            
+            logger.info("Worker initialized with OpenTelemetry integration");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to initialize worker with OpenTelemetry", e);
+            throw new RuntimeException("Worker initialization failed", e);
+        }
+    }
+
+    // Additional methods for worker lifecycle management (start, close)
+    // ...
+}
+```
+
+### Step 6: Configure Workflow Starter
+Update your Temporal Workflow Starter to use the initialize OpenTelemetry for traces:
+
+```java:src/main/java/helloworld/main/HelloWorldStarter.java
+package helloworld.main;
+
+import helloworld.config.TemporalConfig;
+import helloworld.config.SignozTelemetryUtils;
+import helloworld.config.TracingExporter;
+import helloworld.workflows.HelloWorldWorkflow;
+import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowClientOptions;
+import io.temporal.client.WorkflowOptions;
+import io.temporal.common.RetryOptions;
+import io.temporal.serviceclient.WorkflowServiceStubsOptions;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
+import java.time.Duration;
+import java.util.UUID;
+
+public class HelloWorldStarter {
+    private final WorkflowClient client;
+    private final Tracer tracer;
+
+    public HelloWorldStarter() {
+        // Initialize OpenTelemetry
+        SignozTelemetryUtils.initializeTelemetry();
+        this.tracer = SignozTelemetryUtils.getTracer();
+
+        // Configure service stubs with OpenTelemetry
+        WorkflowServiceStubsOptions stubOptions = WorkflowServiceStubsOptions.newBuilder()
+            .setMetricsScope(SignozTelemetryUtils.getMetricsScope())
+            .build();
+
+        // Configure client with OpenTelemetry interceptor
+        WorkflowClientOptions clientOptions = WorkflowClientOptions.newBuilder()
+            .setInterceptors(SignozTelemetryUtils.getClientInterceptor())
+            .build();
+
+        // Create client with configured options
+        this.client = TemporalConfig.getWorkflowClient(stubOptions, clientOptions);
+    }
+
+    public void runWorkflow(String name) {
+        // Create workflow span for tracing
+        Span workflowSpan = tracer.spanBuilder("StartWorkflow")
+            .setAttribute("workflow.name", "HelloWorldWorkflow")
+            .setAttribute("workflow.input", name)
+            .setAttribute("workflow.type", "temporal")
+            .startSpan();
+
+        try (Scope scope = workflowSpan.makeCurrent()) {
+            // Configure workflow options with retry policy
+            WorkflowOptions options = WorkflowOptions.newBuilder()
+                .setTaskQueue(TemporalConfig.getTaskQueue())
+                .setWorkflowId("hello-world-" + UUID.randomUUID())
+                .setRetryOptions(RetryOptions.newBuilder()
+                    .setInitialInterval(Duration.ofSeconds(1))
+                    .setMaximumInterval(Duration.ofSeconds(10))
+                    .setBackoffCoefficient(2.0)
+                    .setMaximumAttempts(3)
+                    .build())
+                .build();
+
+            // Execute workflow with tracing
+            HelloWorldWorkflow workflow = client.newWorkflowStub(HelloWorldWorkflow.class, options);
+            String result = workflow.sayHello(name);
+            
+            workflowSpan.setStatus(StatusCode.OK);
+            System.out.println("Workflow result: " + result);
+        } catch (Exception e) {
+            workflowSpan.recordException(e);
+            workflowSpan.setStatus(StatusCode.ERROR);
+            throw new RuntimeException("Workflow execution failed", e);
+        } finally {
+            workflowSpan.end();
+            TracingExporter.shutdown();
+        }
+    }
+
+    // Additional methods and main entry point
+    // ...
+}
+```
+
+### Step 7: Configure Environment
+Set up your environment variables for Signoz.
+
+```bash
+# SigNoz endpoint
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+
+# Set service name and other attributes
+OTEL_RESOURCE_ATTRIBUTES="service.name=temporal-hello-world"
+```
+
+### Step 8: Run Application
+
+1. Start the worker with tracing enabled:
+```bash
+mvn exec:java -Dexec.mainClass="helloworld.workers.HelloWorldWorker"
+```
+
+2. Execute workflows to generate traces:
+```bash
+mvn exec:java -Dexec.mainClass="helloworld.main.HelloWorldStarter"
+```
+
+</TabItem>
+
+<TabItem value="typescript" label="TypeScript">
+_TypeScript implementation documentation coming soon_
+</TabItem>
+
+<TabItem value="go" label="Go">
+_Go implementation documentation coming soon_
+</TabItem>
+</Tabs>
+</TabItem>
+
+<TabItem value="signoz-cloud" label="SigNoz Cloud">
+<Tabs>
+<TabItem value="java" label="Java" default>
+
+### Step 1: Add OpenTelemetry Dependencies
+
+Add to your `pom.xml`:
+
+```xml
+<properties>
+    <opentelemetry.version>1.34.1</opentelemetry.version>
+    <temporal.version>1.24.1</temporal.version>
+</properties>
+
+<dependencies>
+    <!-- Temporal -->
+    <dependency>
+        <groupId>io.temporal</groupId>
+        <artifactId>temporal-sdk</artifactId>
+        <version>${temporal.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.temporal</groupId>
+        <artifactId>temporal-opentracing</artifactId>
+        <version>${temporal.version}</version>
+    </dependency>
+
+    <!-- OpenTelemetry -->
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-api</artifactId>
+        <version>${opentelemetry.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-sdk</artifactId>
+        <version>${opentelemetry.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-exporter-otlp</artifactId>
+        <version>${opentelemetry.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-extension-trace-propagators</artifactId>
+        <version>${opentelemetry.version}</version>
+    </dependency>
+</dependencies>
+```
+
+### Step 2: Configure OpenTelemetry
+
+Create `SignozTelemetryUtils.java` to configure OpenTelemetry with SigNoz OTLP exporter, trace propagation, and Temporal interceptors:
+
+```java:src/main/java/helloworld/config/SignozTelemetryUtils.java
+package helloworld.config;
+
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.temporal.common.interceptors.WorkerInterceptor;
+import io.temporal.common.interceptors.WorkflowClientInterceptor;
+import com.uber.m3.tally.Scope;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public final class SignozTelemetryUtils {
+    private static final Logger logger = Logger.getLogger(SignozTelemetryUtils.class.getName());
+    private static volatile boolean isInitialized = false;
+    private static volatile Tracer tracer;
+    private static volatile Meter meter;
+
+    public static synchronized void initializeTelemetry() {
+        if (isInitialized) {
+            logger.info("OpenTelemetry already initialized");
+            return;
+        }
+
+        try {
+            logger.info("Configuring OpenTelemetry with endpoint: " + OpenTelemetryConfig.getEndpoint());
+
+            System.setProperty("otel.exporter.otlp.protocol", "grpc");
+            System.setProperty("otel.exporter.otlp.endpoint", OpenTelemetryConfig.getEndpoint());
+
+            OpenTelemetrySdk sdk = OpenTelemetrySdk.builder()
+                .setTracerProvider(TracingExporter.createTracerProvider())
+                .setMeterProvider(MetricsExporter.createMeterProvider())
+                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+                .build();
+
+            OpenTelemetryConfig.setOpenTelemetry(sdk);
+            isInitialized = true;
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    logger.info("Starting OpenTelemetry shutdown...");
+                    TracingExporter.shutdown();
+                    MetricsExporter.shutdown();
+                    logger.info("OpenTelemetry shutdown completed");
+                } catch (Exception e) {
+                    logger.log(Level.SEVERE, "Error during OpenTelemetry shutdown", e);
+                }
+            }));
+
+            logger.info("OpenTelemetry initialized successfully");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error configuring OpenTelemetry", e);
+            throw new RuntimeException("Failed to configure OpenTelemetry", e);
+        }
+    }
+
+    public static OpenTelemetry getOpenTelemetry() {
+        ensureInitialized();
+        return OpenTelemetryConfig.getOpenTelemetry();
+    }
+
+    public static synchronized Tracer getTracer() {
+        if (tracer == null) {
+            tracer = getOpenTelemetry().getTracer(SignozTelemetryUtils.class.getName());
+        }
+        return tracer;
+    }
+
+    public static synchronized Meter getMeter() {
+        if (meter == null) {
+            meter = getOpenTelemetry().getMeter(SignozTelemetryUtils.class.getName());
+        }
+        return meter;
+    }
+
+    public static Scope getMetricsScope() {
+        ensureInitialized();
+        return MetricsExporter.getMetricsScope();
+    }
+
+    public static WorkerInterceptor getWorkerInterceptor() {
+        ensureInitialized();
+        return TracingExporter.getWorkerInterceptor();
+    }
+
+    public static WorkflowClientInterceptor getClientInterceptor() {
+        ensureInitialized();
+        return TracingExporter.getClientInterceptor();
+    }
+
+    private static void ensureInitialized() {
+        if (!isInitialized) {
+            throw new IllegalStateException("OpenTelemetry not initialized. Call initializeTelemetry() first.");
+        }
+    }
+
+    private SignozTelemetryUtils() {
+    }
+}
+```
+
+### Step 3: Configure OpenTelemetry Settings
+
+Create `OpenTelemetryConfig.java` to manage OpenTelemetry configuration including service attributes, resource settings, and endpoint configuration. This class will be used by the telemetry utilities to initialize the OpenTelemetry SDK.
+
+```java:src/main/java/helloworld/config/OpenTelemetryConfig.java
+package helloworld.config;
+
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.resources.Resource;
+import java.util.logging.Logger;
+
+public final class OpenTelemetryConfig {
+    private static final Logger logger = Logger.getLogger(OpenTelemetryConfig.class.getName());
+
+    public static final String DEFAULT_SIGNOZ_ENDPOINT = "http://localhost:4317";
+
+    public static final AttributeKey<String> SERVICE_NAMESPACE = AttributeKey.stringKey("service.namespace");
+    public static final AttributeKey<String> DEPLOYMENT_ENVIRONMENT = AttributeKey.stringKey("deployment.environment");
+
+    private static final String ENV_OTEL_ENDPOINT = "OTEL_EXPORTER_OTLP_ENDPOINT";
+    private static final String ENV_ENVIRONMENT = "OTEL_ENVIRONMENT";
+
+    private static volatile OpenTelemetry openTelemetry;
+
+    public static OpenTelemetry getOpenTelemetry() {
+        if (openTelemetry == null) {
+            throw new IllegalStateException("OpenTelemetry not initialized. Call initialize() first.");
+        }
+        return openTelemetry;
+    }
+
+    public static Resource createResource() {
+        String environment = System.getenv().getOrDefault(ENV_ENVIRONMENT, "development");
+
+        Resource baseResource = Resource.getDefault();
+        Resource customResource = Resource.create(Attributes.of(
+            SERVICE_NAMESPACE, "default",
+            DEPLOYMENT_ENVIRONMENT, environment
+        ));
+
+        logger.info("Creating resource with environment: " + environment);
+        return baseResource.merge(customResource);
+    }
+
+    public static String getEndpoint() {
+        return System.getenv().getOrDefault(ENV_OTEL_ENDPOINT, DEFAULT_SIGNOZ_ENDPOINT);
+    }
+
+    protected static synchronized void setOpenTelemetry(OpenTelemetrySdk sdk) {
+        if (openTelemetry != null) {
+            throw new IllegalStateException("OpenTelemetry already initialized");
+        }
+        openTelemetry = sdk;
+    }
+
+    private OpenTelemetryConfig() {
+    }
+}
+```
+
+### Step 4: Set Up Trace Export
+
+Create `TracingExporter.java` to configure trace export to SigNoz with OTLP/gRPC, batch processing, and Temporal tracing:
+
+```java:src/main/java/helloworld/config/TracingExporter.java
+package helloworld.config;
+
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import io.temporal.common.interceptors.WorkerInterceptor;
+import io.temporal.common.interceptors.WorkflowClientInterceptor;
+import io.temporal.opentracing.OpenTracingClientInterceptor;
+import io.temporal.opentracing.OpenTracingOptions;
+import io.temporal.opentracing.OpenTracingSpanContextCodec;
+import io.temporal.opentracing.OpenTracingWorkerInterceptor;
+import io.opentelemetry.opentracingshim.OpenTracingShim;
+import java.util.logging.Logger;
+import java.util.concurrent.TimeUnit;
+
+public class TracingExporter {
+    private static final Logger logger = Logger.getLogger(TracingExporter.class.getName());
+    private static OpenTracingOptions openTracingOptions;
+    private static BatchSpanProcessor spanProcessor;
+
+    public static synchronized OpenTracingOptions getOpenTracingOptions() {
+        if (openTracingOptions == null) {
+            openTracingOptions = OpenTracingOptions.newBuilder()
+                .setTracer(OpenTracingShim.createTracerShim(OpenTelemetryConfig.getOpenTelemetry()))
+                .setSpanContextCodec(OpenTracingSpanContextCodec.TEXT_MAP_CODEC)
+                .build();
+        }
+        return openTracingOptions;
+    }
+
+    public static WorkerInterceptor getWorkerInterceptor() {
+        return new OpenTracingWorkerInterceptor(getOpenTracingOptions());
+    }
+
+    public static WorkflowClientInterceptor getClientInterceptor() {
+        return new OpenTracingClientInterceptor(getOpenTracingOptions());
+    }
+
+    public static SdkTracerProvider createTracerProvider() {
+        String endpoint = OpenTelemetryConfig.getEndpoint();
+
+        OtlpGrpcSpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
+            .setEndpoint(endpoint)
+            .addHeader("signoz-debug", "true")
+            .setTimeout(java.time.Duration.ofSeconds(30))
+            .build();
+
+        spanProcessor = BatchSpanProcessor.builder(spanExporter)
+            .setScheduleDelay(java.time.Duration.ofMillis(100))
+            .setMaxQueueSize(2048)
+            .setMaxExportBatchSize(512)
+            .build();
+
+        return SdkTracerProvider.builder()
+            .addSpanProcessor(spanProcessor)
+            .setResource(OpenTelemetryConfig.createResource())
+            .build();
+    }
+
+    public static void shutdown() {
+        if (spanProcessor != null) {
+            try {
+                logger.info("Shutting down span processor...");
+                spanProcessor.forceFlush().join(10, TimeUnit.SECONDS);
+                spanProcessor.shutdown().join(10, TimeUnit.SECONDS);
+                logger.info("Span processor shutdown completed");
+            } catch (Exception e) {
+                logger.severe("Error during span processor shutdown: " + e.getMessage());
+            }
+        }
+    }
+
+    private TracingExporter() {
+    }
+}
+```
+
+### Step 5: Configure Worker with Tracing
+
+Update your Temporal Worker to use the initialize OpenTelemetry for traces:
+
+```java:src/main/java/helloworld/workers/HelloWorldWorker.java
+package helloworld.workers;
+
+import helloworld.config.TemporalConfig;
+import helloworld.config.SignozTelemetryUtils;
+import helloworld.workflows.impl.HelloWorldWorkflowImpl;
+import io.temporal.worker.Worker;
+import io.temporal.worker.WorkerFactory;
+import io.temporal.worker.WorkerFactoryOptions;
+import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowClientOptions;
+import io.temporal.serviceclient.WorkflowServiceStubsOptions;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
+public class HelloWorldWorker implements AutoCloseable {
+    private static final Logger logger = Logger.getLogger(HelloWorldWorker.class.getName());
+    private final WorkerFactory factory;
+    private final Worker worker;
+
+    public HelloWorldWorker() {
+        try {
+            // Initialize OpenTelemetry with SigNoz configuration
+            SignozTelemetryUtils.initializeTelemetry();
+            logger.info("OpenTelemetry initialized successfully");
+
+            // Configure service stubs with metrics
+            WorkflowServiceStubsOptions stubOptions = WorkflowServiceStubsOptions.newBuilder()
+                .setMetricsScope(SignozTelemetryUtils.getMetricsScope())
+                .build();
+
+            // Configure worker factory with tracing interceptor
+            WorkerFactoryOptions factoryOptions = WorkerFactoryOptions.newBuilder()
+                .setWorkerInterceptors(SignozTelemetryUtils.getWorkerInterceptor())
+                .build();
+
+            // Create workflow client with tracing interceptor
+            WorkflowClient client = WorkflowClient.newInstance(
+                TemporalConfig.getWorkflowServiceStubs(stubOptions),
+                WorkflowClientOptions.newBuilder()
+                    .setInterceptors(SignozTelemetryUtils.getClientInterceptor())
+                    .build()
+            );
+
+            // Create factory with configured options
+            this.factory = WorkerFactory.newInstance(client, factoryOptions);
+
+            // Create and configure worker
+            this.worker = factory.newWorker(TemporalConfig.getTaskQueue());
+            this.worker.registerWorkflowImplementationTypes(HelloWorldWorkflowImpl.class);
+            this.worker.registerActivitiesImplementations(new HelloWorldActivityImpl());
+            
+            logger.info("Worker initialized with OpenTelemetry integration");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to initialize worker with OpenTelemetry", e);
+            throw new RuntimeException("Worker initialization failed", e);
+        }
+    }
+
+    // Additional methods for worker lifecycle management (start, close)
+    // ...
+}
+```
+
+### Step 6: Configure Workflow Starter
+Update your Temporal Workflow Starter to use the initialize OpenTelemetry for traces:
+
+```java:src/main/java/helloworld/main/HelloWorldStarter.java
+package helloworld.main;
+
+import helloworld.config.TemporalConfig;
+import helloworld.config.SignozTelemetryUtils;
+import helloworld.config.TracingExporter;
+import helloworld.workflows.HelloWorldWorkflow;
+import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowClientOptions;
+import io.temporal.client.WorkflowOptions;
+import io.temporal.common.RetryOptions;
+import io.temporal.serviceclient.WorkflowServiceStubsOptions;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
+import java.time.Duration;
+import java.util.UUID;
+
+public class HelloWorldStarter {
+    private final WorkflowClient client;
+    private final Tracer tracer;
+
+    public HelloWorldStarter() {
+        // Initialize OpenTelemetry
+        SignozTelemetryUtils.initializeTelemetry();
+        this.tracer = SignozTelemetryUtils.getTracer();
+
+        // Configure service stubs with OpenTelemetry
+        WorkflowServiceStubsOptions stubOptions = WorkflowServiceStubsOptions.newBuilder()
+            .setMetricsScope(SignozTelemetryUtils.getMetricsScope())
+            .build();
+
+        // Configure client with OpenTelemetry interceptor
+        WorkflowClientOptions clientOptions = WorkflowClientOptions.newBuilder()
+            .setInterceptors(SignozTelemetryUtils.getClientInterceptor())
+            .build();
+
+        // Create client with configured options
+        this.client = TemporalConfig.getWorkflowClient(stubOptions, clientOptions);
+    }
+
+    public void runWorkflow(String name) {
+        // Create workflow span for tracing
+        Span workflowSpan = tracer.spanBuilder("StartWorkflow")
+            .setAttribute("workflow.name", "HelloWorldWorkflow")
+            .setAttribute("workflow.input", name)
+            .setAttribute("workflow.type", "temporal")
+            .startSpan();
+
+        try (Scope scope = workflowSpan.makeCurrent()) {
+            // Configure workflow options with retry policy
+            WorkflowOptions options = WorkflowOptions.newBuilder()
+                .setTaskQueue(TemporalConfig.getTaskQueue())
+                .setWorkflowId("hello-world-" + UUID.randomUUID())
+                .setRetryOptions(RetryOptions.newBuilder()
+                    .setInitialInterval(Duration.ofSeconds(1))
+                    .setMaximumInterval(Duration.ofSeconds(10))
+                    .setBackoffCoefficient(2.0)
+                    .setMaximumAttempts(3)
+                    .build())
+                .build();
+
+            // Execute workflow with tracing
+            HelloWorldWorkflow workflow = client.newWorkflowStub(HelloWorldWorkflow.class, options);
+            String result = workflow.sayHello(name);
+            
+            workflowSpan.setStatus(StatusCode.OK);
+            System.out.println("Workflow result: " + result);
+        } catch (Exception e) {
+            workflowSpan.recordException(e);
+            workflowSpan.setStatus(StatusCode.ERROR);
+            throw new RuntimeException("Workflow execution failed", e);
+        } finally {
+            workflowSpan.end();
+            TracingExporter.shutdown();
+        }
+    }
+
+    // Additional methods and main entry point
+    // ...
+}
+```
+
+### Step 7: Configure Environment Variables for SigNoz Cloud
+```bash
+# SigNoz Cloud endpoint
+OTEL_EXPORTER_OTLP_ENDPOINT=https://ingest.{region}.signoz.cloud:443
+
+# Set service name and other attributes
+OTEL_RESOURCE_ATTRIBUTES="service.name=temporal-hello-world"
+
+# SigNoz Cloud authentication
+OTEL_EXPORTER_OTLP_HEADERS="signoz-ingestion-key=<your-signoz-key>"
+```
+
+### Step 8: Run Application
+
+1. Start the worker with tracing enabled:
+```bash
+mvn exec:java -Dexec.mainClass="helloworld.workers.HelloWorldWorker"
+```
+
+2. Execute workflows to generate traces in another terminal:
+```bash
+mvn exec:java -Dexec.mainClass="helloworld.main.HelloWorldStarter"
+```
+
+</TabItem>
+
+<TabItem value="typescript" label="TypeScript">
+_TypeScript implementation documentation coming soon_
+</TabItem>
+
+<TabItem value="go" label="Go">
+_Go implementation documentation coming soon_
+</TabItem>
+</Tabs>
+</TabItem>
+</Tabs>
+
+## Monitoring in SigNoz
+
+### View Services
+
+Navigate to the `Services` tab to find your Temporal application:
+
+<figure data-zoomable align='center'>
+<img src="/img/docs/instrumentation/temporal-services.webp" alt="Services view"/>
+<figcaption><i>Services overview showing Temporal application</i></figcaption>
+</figure>
+
+### Analyze Traces
+
+The `Traces` tab displays workflow executions including spans, durations, errors, and metadata.
+
+<figure data-zoomable align='center'>
+<img src="/img/docs/instrumentation/temporal-traces.webp" alt="Traces view"/>
+<figcaption><i>Trace analysis with workflow details</i></figcaption>
+</figure>
+
+### Trace Details
+
+Click any trace to see:
+
+- Complete workflow execution timeline
+- Activity execution details
+- Custom attributes and tags
+- Error information
+
+<figure data-zoomable align='center'>
+<img src="/img/docs/instrumentation/temporal-trace-details.webp" alt="Trace details"/>
+<figcaption><i>Detailed trace view with spans and attributes</i></figcaption>
+</figure>
+
+## Sample Application
+
+Check out our [sample application on GitHub](https://github.com/Creator54/temporal-java-demo-app):
+- Use the `main` branch to follow along with the implementation steps
+- Switch to the `otel` branch to see the complete OpenTelemetry integration
+
+## Troubleshooting
+
+### Common Issues
+
+1. **No Traces Visible**
+   - Verify SigNoz endpoint configuration
+   - Check ingestion key (for SigNoz Cloud)
+   - Ensure OpenTelemetry initialization succeeds
+   - Verify Temporal server is running
+
+2. **Missing Spans**
+   - Check worker registration
+   - Verify workflow implementation registration
+   - Ensure proper task queue configuration
+
+3. **Connection Issues**
+   - Check network connectivity
+   - Verify endpoint protocol (http/https)
+   - Check port accessibility
+   - Verify TLS configuration (if using SigNoz Cloud)
