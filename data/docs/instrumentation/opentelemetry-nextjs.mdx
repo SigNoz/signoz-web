@@ -38,20 +38,7 @@ From VMs, there are two ways to send data to SigNoz Cloud.
 npm install @vercel/otel @opentelemetry/sdk-logs @opentelemetry/api-logs @opentelemetry/instrumentation @opentelemetry/exporter-trace-otlp-http
 ```
 
-**Step 2.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
-
-export default nextConfig;
-```
-
-**Step 3.** Create `instrumentation.node.ts` file<br></br>
+**Step 2.** Create `instrumentation.node.ts` file<br></br>
 You need to configure the endpoint for SigNoz cloud in this file.
 
 ```tsx
@@ -75,7 +62,7 @@ export const traceExporter = new OTLPHttpJsonTraceExporter(exporterOptions);
 - `<service_name>` is name of your service
 
 
-**Step 4.** Create `instrumentation.ts` file<br></br>
+**Step 3.** Create `instrumentation.ts` file<br></br>
 ```tsx
 import { registerOTel } from '@vercel/otel';
 import { traceExporter } from './instrumentation.node';
@@ -88,10 +75,12 @@ export function register() {
 }
 ```
 
-**Step 5.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
+**Step 4.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
 
 <Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
 </Admonition>
 
 You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app/tree/vercel-otel" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
@@ -108,20 +97,7 @@ npm i @opentelemetry/resources
 npm i @opentelemetry/semantic-conventions
 ```
 
-**Step 2.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
-
-export default nextConfig;
-```
-
-**Step 3.** Create `instrumentation.node.ts` file<br></br>
+**Step 2.** Create `instrumentation.node.ts` file<br></br>
 You need to configure the endpoint for SigNoz cloud in this file.
 
 ```tsx
@@ -168,7 +144,7 @@ process.on('SIGTERM', () => {
 - Replace `<your-ingestion-key>` with your SigNoz [ingestion key](https://signoz.io/docs/ingestion/signoz-cloud/keys/).
 - `<service_name>` is name of your service
 
-**Step 4.** Create `instrumentation.ts` file<br></br>
+**Step 3.** Create `instrumentation.ts` file<br></br>
 ```tsx
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -177,10 +153,12 @@ export async function register() {
 }
 ```
 
-**Step 5.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
+**Step 4.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
 
 <Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
 </Admonition>
 
 You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
@@ -205,20 +183,7 @@ OTel Collector binary helps to collect logs, hostmetrics, resource and infra att
 npm install @vercel/otel @opentelemetry/sdk-logs @opentelemetry/api-logs @opentelemetry/instrumentation @opentelemetry/exporter-trace-otlp-http
 ```
 
-**Step 2.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
-
-export default nextConfig;
-```
-
-**Step 3.** Create `instrumentation.node.ts` file<br></br>
+**Step 2.** Create `instrumentation.node.ts` file<br></br>
 You need to configure the endpoint for SigNoz cloud in this file.
 
 ```tsx
@@ -236,7 +201,7 @@ const exporterOptions = {
 export const traceExporter = new OTLPTraceExporter(exporterOptions);
 ```
 
-**Step 4.** Create `instrumentation.ts` file<br></br>
+**Step 3.** Create `instrumentation.ts` file<br></br>
 ```tsx
 import { registerOTel } from '@vercel/otel';
 import { traceExporter } from './instrumentation.node';
@@ -249,10 +214,12 @@ export function register() {
 }
 ```
 
-**Step 5.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
+**Step 4.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
 
 <Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
 </Admonition>
 
 You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app/tree/vercel-otel" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
@@ -288,20 +255,8 @@ npm i @opentelemetry/exporter-trace-otlp-http
 npm i @opentelemetry/resources
 npm i @opentelemetry/semantic-conventions
 ```
-**Step 3.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
 
-export default nextConfig;
-```
-
-**Step 4.** Create `instrumentation.node.ts` file<br></br>
+**Step 3.** Create `instrumentation.node.ts` file<br></br>
 You need to configure the endpoint for SigNoz cloud in this file.
 
 ```tsx
@@ -343,7 +298,7 @@ process.on('SIGTERM', () => {
 });
 ```
 
-**Step 5.** Create `instrumentation.ts` file<br></br>
+**Step 4.** Create `instrumentation.ts` file<br></br>
 ```tsx
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -352,15 +307,17 @@ export async function register() {
 }
 ```
 
-**Step 6.** Once we are done with the above configurations, you can run the collector service with the following command:
+**Step 5.** Once we are done with the above configurations, you can run the collector service with the following command:
 ```bash
 ./otelcol-contrib --config ./config.yaml
 ```
 
-**Step 7.** Start running your application and wait for few seconds to start receiving instrumentation data on the SigNoz Cloud. 
+**Step 6.** Start running your application and wait for few seconds to start receiving instrumentation data on the SigNoz Cloud. 
 
 <Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
 </Admonition>
 
 You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
@@ -385,20 +342,7 @@ Once you have set up OTel Collector agent, you can proceed with OpenTelemetry Ja
 npm install @vercel/otel @opentelemetry/sdk-logs @opentelemetry/api-logs @opentelemetry/instrumentation @opentelemetry/exporter-trace-otlp-http
 ```
 
-**Step 2.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
-
-export default nextConfig;
-```
-
-**Step 3.** Create `instrumentation.node.ts` file<br></br>
+**Step 2.** Create `instrumentation.node.ts` file<br></br>
 You need to configure the endpoint for SigNoz cloud in this file.
 
 ```tsx
@@ -416,7 +360,7 @@ const exporterOptions = {
 export const traceExporter = new OTLPTraceExporter(exporterOptions);
 ```
 
-**Step 4.** Create `instrumentation.ts` file<br></br>
+**Step 3.** Create `instrumentation.ts` file<br></br>
 ```tsx
 import { registerOTel } from '@vercel/otel';
 import { traceExporter } from './instrumentation.node';
@@ -429,10 +373,12 @@ export function register() {
 }
 ```
 
-**Step 5.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
+**Step 4.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
 
 <Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
 </Admonition>
 
 You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app/tree/vercel-otel" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
@@ -457,20 +403,7 @@ npm i @opentelemetry/resources
 npm i @opentelemetry/semantic-conventions
 ```
 
-**Step 3.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
-
-export default nextConfig;
-```
-
-**Step 4.** Create `instrumentation.ts` file<br></br>
+**Step 3.** Create `instrumentation.ts` file<br></br>
 ```tsx
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -479,7 +412,7 @@ export async function register() {
 }
 ```
 
-**Step 5.** Create `instrumentation.node.ts` file<br></br>
+**Step 4.** Create `instrumentation.node.ts` file<br></br>
 You need to configure the endpoint for SigNoz cloud in this file.
 
 ```tsx
@@ -521,15 +454,17 @@ process.on('SIGTERM', () => {
 });
 ```
 
-**Step 6.** Once we are done with the above configurations, you can run the collector service with the following command:
+**Step 5.** Once we are done with the above configurations, you can run the collector service with the following command:
 ```bash
 ./otelcol-contrib --config ./config.yaml
 ```
 
-**Step 7.** Start running your application and wait for few seconds to start receiving instrumentation data on the SigNoz Cloud. 
+**Step 6.** Start running your application and wait for few seconds to start receiving instrumentation data on the SigNoz Cloud. 
 
 <Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
 </Admonition>
 
 You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
@@ -555,20 +490,7 @@ From Windows, there are two ways to send data to SigNoz Cloud.
 npm install @vercel/otel @opentelemetry/sdk-logs @opentelemetry/api-logs @opentelemetry/instrumentation @opentelemetry/exporter-trace-otlp-http
 ```
 
-**Step 2.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
-
-export default nextConfig;
-```
-
-**Step 3.** Create `instrumentation.node.ts` file<br></br>
+**Step 2.** Create `instrumentation.node.ts` file<br></br>
 You need to configure the endpoint for SigNoz cloud in this file.
 
 ```tsx
@@ -591,7 +513,7 @@ export const traceExporter = new OTLPTraceExporter(exporterOptions);
 - Replace `<your-ingestion-key>` with your SigNoz [ingestion key](https://signoz.io/docs/ingestion/signoz-cloud/keys/).
 - `<service_name>` is name of your service
 
-**Step 4.** Create `instrumentation.ts` file<br></br>
+**Step 3.** Create `instrumentation.ts` file<br></br>
 ```tsx
 import { registerOTel } from '@vercel/otel';
 import { traceExporter } from './instrumentation.node';
@@ -604,10 +526,12 @@ export function register() {
 }
 ```
 
-**Step 5.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
+**Step 4.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
 
 <Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
 </Admonition>
 
 You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app/tree/vercel-otel" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
@@ -624,20 +548,7 @@ npm i @opentelemetry/resources
 npm i @opentelemetry/semantic-conventions
 ```
 
-**Step 2.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
-
-export default nextConfig;
-```
-
-**Step 3.** Create `instrumentation.ts` file<br></br>
+**Step 2.** Create `instrumentation.ts` file<br></br>
 ```tsx
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -646,7 +557,7 @@ export async function register() {
 }
 ```
 
-**Step 4.** Create `instrumentation.node.ts` file<br></br>
+**Step 3.** Create `instrumentation.node.ts` file<br></br>
 You need to configure the endpoint for SigNoz cloud in this file.
 
 ```tsx
@@ -700,10 +611,12 @@ $env:SIGNOZ_INGESTION_KEY="<your-ingestion-key>"
 
 - Replace `<your-ingestion-key>` with your SigNoz [ingestion key](https://signoz.io/docs/ingestion/signoz-cloud/keys/).
 
-**Step 5.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
+**Step 4.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
 
 <Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
 </Admonition>
 
 You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
@@ -728,20 +641,7 @@ OTel Collector binary helps to collect logs, hostmetrics, resource and infra att
 npm install @vercel/otel @opentelemetry/sdk-logs @opentelemetry/api-logs @opentelemetry/instrumentation @opentelemetry/exporter-trace-otlp-http
 ```
 
-**Step 2.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
-
-export default nextConfig;
-```
-
-**Step 3.** Create `instrumentation.node.ts` file<br></br>
+**Step 2.** Create `instrumentation.node.ts` file<br></br>
 You need to configure the endpoint for SigNoz cloud in this file.
 
 ```tsx
@@ -759,7 +659,7 @@ const exporterOptions = {
 export const traceExporter = new OTLPTraceExporter(exporterOptions);
 ```
 
-**Step 4.** Create `instrumentation.ts` file<br></br>
+**Step 3.** Create `instrumentation.ts` file<br></br>
 ```tsx
 import { registerOTel } from '@vercel/otel';
 import { traceExporter } from './instrumentation.node';
@@ -772,10 +672,12 @@ export function register() {
 }
 ```
 
-**Step 5.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
+**Step 4.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
 
 <Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
 </Admonition>
 
 You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app/tree/vercel-otel" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
@@ -809,184 +711,6 @@ npm i @opentelemetry/auto-instrumentations-node
 npm i @opentelemetry/exporter-trace-otlp-http
 npm i @opentelemetry/resources
 npm i @opentelemetry/semantic-conventions
-```
-
-**Step 3.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
-
-export default nextConfig;
-```
-
-**Step 4.** Create `instrumentation.ts` file<br></br>
-```tsx
-export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    await import('./instrumentation.node')
-  }
-}
-```
-
-**Step 5.** Create `instrumentation.node.ts` file<br></br>
-You need to configure the endpoint for SigNoz cloud in this file.
-
-```tsx
-'use strict'
-import process from 'process';
-import {NodeSDK} from '@opentelemetry/sdk-node';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import { Resource } from '@opentelemetry/resources'
-import { SEMRESATTRS_SERVICE_NAME } from '@opentelemetry/semantic-conventions'
- 
-// Add otel logging when debugging
-// import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
-// diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
-
-const exporterOptions = {
-  url: 'http://localhost:4318/v1/traces',
-}
-
-const traceExporter = new OTLPTraceExporter(exporterOptions);
-const sdk = new NodeSDK({
-  traceExporter,
-  instrumentations: [getNodeAutoInstrumentations()],
-    resource: new Resource({
-    [SEMRESATTRS_SERVICE_NAME]: 'next-app',
-  }),
-});
-
-// initialize the SDK and register with the OpenTelemetry API
-// this enables the API to record telemetry
-sdk.start()
-
-// gracefully shut down the SDK on process exit
-process.on('SIGTERM', () => {
-  sdk.shutdown()
-    .then(() => console.log('Tracing terminated'))
-    .catch((error) => console.log('Error terminating tracing', error))
-    .finally(() => process.exit(0));
-});
-```
-
-**Step 6.** Once we are done with the above configurations, you can run the collector service with the following command:
-```bash
-./otelcol-contrib --config ./config.yaml
-```
-
-**Step 7.** Start running your application and wait for few seconds to start receiving instrumentation data on the SigNoz Cloud. 
-
-<Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
-</Admonition>
-
-You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
-
-</TabItem>
-
-</Tabs>
-
-</TabItem>
-<TabItem value='self-host' label='Self-Host'>
-## Send traces to SigNoz Self-Host
-
-If you're trying to send instrumentation data to SigNoz self-hosted way, the only minor thing (apart from installing OpenTelemetry packages) that you'd be required is to change the `exporterOptions` in the `tracing.js` file
-
-You can find instructions to install OTel Collector binary [here](https://signoz.io/docs/tutorial/kubernetes-infra-metrics/) in your Kubernetes cluster. 
-
-### Using vercel otel
-
-**Step 1.** Install OpenTelemetry packages
-
-```bash
-npm install @vercel/otel @opentelemetry/sdk-logs @opentelemetry/api-logs @opentelemetry/instrumentation @opentelemetry/exporter-trace-otlp-http
-```
-
-**Step 2.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
-
-export default nextConfig;
-```
-
-**Step 3.** Create `instrumentation.node.ts` file<br></br>
-You need to configure the endpoint for SigNoz cloud in this file.
-
-```tsx
-'use strict'
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-
-// Add otel logging
-import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
-diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.ERROR); // set diaglog level to DEBUG when debugging
-
-const exporterOptions = {
-  url: 'http://localhost:4318/v1/traces', // Endpoint of SigNoz/Otel Collector
-}
-
-export const traceExporter = new OTLPTraceExporter(exporterOptions);
-```
-
-- Set the `<region>` to match your SigNoz Cloud [region](https://signoz.io/docs/ingestion/signoz-cloud/overview/#endpoint)
-- Replace `<your-ingestion-key>` with your SigNoz [ingestion key](https://signoz.io/docs/ingestion/signoz-cloud/keys/).
-- `<service_name>` is name of your service
-
-**Step 4.** Create `instrumentation.ts` file<br></br>
-```tsx
-import { registerOTel } from '@vercel/otel';
-import { traceExporter } from './instrumentation.node';
-
-export function register() {
-  registerOTel({
-    serviceName: 'Sample Next.js App',
-    traceExporter: traceExporter,
-  });
-}
-```
-
-**Step 5.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
-
-<Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
-</Admonition>
-
-You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app/tree/vercel-otel" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
-
-### Using OpenTelemetry instrument (only works for nodejs runtime)
-
-**Step 1.** Install OpenTelemetry packages
-
-```bash
-npm i @opentelemetry/sdk-node
-npm i @opentelemetry/auto-instrumentations-node
-npm i @opentelemetry/exporter-trace-otlp-http
-npm i @opentelemetry/resources
-npm i @opentelemetry/semantic-conventions
-```
-
-**Step 2.** Update `next.config.mjs` to include instrumentationHook
-```tsx
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // include instrumentationHook experimental feature
-    experimental: {
-        instrumentationHook: true,
-    },
-};
-
-export default nextConfig;
 ```
 
 **Step 3.** Create `instrumentation.ts` file<br></br>
@@ -1040,8 +764,153 @@ process.on('SIGTERM', () => {
 });
 ```
 
+**Step 5.** Once we are done with the above configurations, you can run the collector service with the following command:
+```bash
+./otelcol-contrib --config ./config.yaml
+```
+
+**Step 6.** Start running your application and wait for few seconds to start receiving instrumentation data on the SigNoz Cloud. 
+
 <Admonition>
-The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
+</Admonition>
+
+You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
+
+</TabItem>
+
+</Tabs>
+
+</TabItem>
+<TabItem value='self-host' label='Self-Host'>
+## Send traces to SigNoz Self-Host
+
+If you're trying to send instrumentation data to SigNoz self-hosted way, the only minor thing (apart from installing OpenTelemetry packages) that you'd be required is to change the `exporterOptions` in the `tracing.js` file
+
+You can find instructions to install OTel Collector binary [here](https://signoz.io/docs/tutorial/kubernetes-infra-metrics/) in your Kubernetes cluster. 
+
+### Using vercel otel
+
+**Step 1.** Install OpenTelemetry packages
+
+```bash
+npm install @vercel/otel @opentelemetry/sdk-logs @opentelemetry/api-logs @opentelemetry/instrumentation @opentelemetry/exporter-trace-otlp-http
+```
+
+**Step 2.** Create `instrumentation.node.ts` file<br></br>
+You need to configure the endpoint for SigNoz cloud in this file.
+
+```tsx
+'use strict'
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+
+// Add otel logging
+import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.ERROR); // set diaglog level to DEBUG when debugging
+
+const exporterOptions = {
+  url: 'http://localhost:4318/v1/traces', // Endpoint of SigNoz/Otel Collector
+}
+
+export const traceExporter = new OTLPTraceExporter(exporterOptions);
+```
+
+- Set the `<region>` to match your SigNoz Cloud [region](https://signoz.io/docs/ingestion/signoz-cloud/overview/#endpoint)
+- Replace `<your-ingestion-key>` with your SigNoz [ingestion key](https://signoz.io/docs/ingestion/signoz-cloud/keys/).
+- `<service_name>` is name of your service
+
+**Step 3.** Create `instrumentation.ts` file<br></br>
+```tsx
+import { registerOTel } from '@vercel/otel';
+import { traceExporter } from './instrumentation.node';
+
+export function register() {
+  registerOTel({
+    serviceName: 'Sample Next.js App',
+    traceExporter: traceExporter,
+  });
+}
+```
+
+**Step 4.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz cloud [here](#validating-instrumentation-by-checking-for-traces).
+
+<Admonition>
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
+</Admonition>
+
+You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app/tree/vercel-otel" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
+
+### Using OpenTelemetry instrument (only works for nodejs runtime)
+
+**Step 1.** Install OpenTelemetry packages
+
+```bash
+npm i @opentelemetry/sdk-node
+npm i @opentelemetry/auto-instrumentations-node
+npm i @opentelemetry/exporter-trace-otlp-http
+npm i @opentelemetry/resources
+npm i @opentelemetry/semantic-conventions
+```
+
+**Step 2.** Create `instrumentation.ts` file<br></br>
+```tsx
+export async function register() {
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    await import('./instrumentation.node')
+  }
+}
+```
+
+**Step 3.** Create `instrumentation.node.ts` file<br></br>
+You need to configure the endpoint for SigNoz cloud in this file.
+
+```tsx
+'use strict'
+import process from 'process';
+import {NodeSDK} from '@opentelemetry/sdk-node';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+import { Resource } from '@opentelemetry/resources'
+import { SEMRESATTRS_SERVICE_NAME } from '@opentelemetry/semantic-conventions'
+ 
+// Add otel logging when debugging
+// import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+// diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
+
+const exporterOptions = {
+  url: 'http://localhost:4318/v1/traces',
+}
+
+const traceExporter = new OTLPTraceExporter(exporterOptions);
+const sdk = new NodeSDK({
+  traceExporter,
+  instrumentations: [getNodeAutoInstrumentations()],
+    resource: new Resource({
+    [SEMRESATTRS_SERVICE_NAME]: 'next-app',
+  }),
+});
+
+// initialize the SDK and register with the OpenTelemetry API
+// this enables the API to record telemetry
+sdk.start()
+
+// gracefully shut down the SDK on process exit
+process.on('SIGTERM', () => {
+  sdk.shutdown()
+    .then(() => console.log('Tracing terminated'))
+    .catch((error) => console.log('Error terminating tracing', error))
+    .finally(() => process.exit(0));
+});
+```
+
+<Admonition>
+- The instrumentation file should be in the root of your project and not inside the app or pages directory. If you're using the src folder, then place the file inside src alongside pages and app.
+
+- For older versions of NextJS(14 below), the [experimental instrumentation hook](https://nextjs.org/docs/14/pages/api-reference/next-config-js/instrumentationHook) needs to be enabled
 </Admonition>
 
 Again, `http://localhost:4318/v1/traces` is the default url for sending your tracing data. We are assuming you have installed SigNoz on your localhost. Based on your environment, you can update it accordingly. It should be in the following format:
@@ -1052,7 +921,7 @@ Again, `http://localhost:4318/v1/traces` is the default url for sending your tra
 
 Once you're done with this, add your required changes including receivers, exporters in the `config.yml` file which can be generally found [here](https://github.com/SigNoz/signoz/blob/main/deploy/docker/otel-collector-config.yaml).
 
-**Step 5.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz [here](#validating-instrumentation-by-checking-for-traces).
+**Step 4.** Once you're done configuring the exporter options, try running your application and validate if your application is sending traces to SigNoz [here](#validating-instrumentation-by-checking-for-traces).
 
 You can also check the sample application at this <a href = "https://github.com/SigNoz/sample-nextjs-app" rel="noopener noreferrer nofollow" target="_blank">GitHub repo</a>.
 
