@@ -310,6 +310,16 @@ module.exports = () => {
           permanent: true,
         },
         {
+          source: '/docs/instrumentation/temporal-traces/',
+          destination: '/docs/instrumentation/opentelemetry-temporal-traces',
+          permanent: true,
+        },
+        {
+          source: '/docs/instrumentation/temporal-metrics/',
+          destination: '/docs/metrics-management/opentelemetry-temporal-metrics',
+          permanent: true,
+        },
+        {
           source: '/docs/instrumentation/hypercorn-unicorn-support/',
           destination: '/docs/instrumentation/opentelemetry-hypercorn-unicorn-support/',
           permanent: true,
