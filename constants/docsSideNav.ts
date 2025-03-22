@@ -319,6 +319,12 @@ const docsSideNav = [
             route: '/docs/instrumentation/swift',
           },
           {
+            type: 'doc',
+            label: 'Temporal Traces',
+            route: '/docs/instrumentation/opentelemetry-temporal-traces',
+            className: 'new-doc'
+          },
+          {
             type: 'category',
             isExpanded: false,
             label: 'Manual Instrumentation',
@@ -817,6 +823,12 @@ const docsSideNav = [
         className: 'new-doc',
         route: '/docs/metrics-management/docker-container-metrics',
         label: 'Docker container metrics',
+      },
+      {
+        type: 'doc',
+        route: '/docs/metrics-management/opentelemetry-temporal-metrics',
+        label: 'Temporal Metrics',
+        className: 'new-doc',
       },
       {
         type: 'doc',
