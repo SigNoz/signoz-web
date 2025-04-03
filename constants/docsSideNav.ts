@@ -141,7 +141,7 @@ const docsSideNav = [
             {
               type: 'category',
               isExpanded: false,
-              label: 'Kubernetes',
+              label: 'Installation on Kubernetes',
               route: '/docs/install/kubernetes',
               items: [
                 {
