@@ -1,15 +1,93 @@
 const docsSideNav = [
   {
+    type: "category",
+    isExpanded: false,
+    label: "Overview",
+    items: [
+      {
+        type: "doc",
+        label: "What's Signoz",
+        route: "/docs/introduction"
+      },
+      {
+        label: 'SigNoz Features',
+        type: 'category',
+        isExpanded: false,
+        items: [
+          {
+            type: 'doc',
+            route: '/docs/product-features/query-builder',
+            label: 'Query Builder',
+          },
+          {
+            type: 'doc',
+            route: '/docs/product-features/alert-management',
+            label: 'Alert Management',
+          },
+          {
+            type: 'doc',
+            route: '/docs/product-features/trace-explorer',
+            label: 'Trace Explorer',
+          },
+          {
+            type: 'doc',
+            route: '/docs/product-features/logs-explorer',
+            label: 'Logs Explorer',
+          },
+          {
+            type: 'doc',
+            route: '/docs/product-features/saved-view',
+            label: 'Saved View',
+            // className: 'new-doc', // Add this if you want to add a new tag in sidebar
+          },
+          {
+            type: 'doc',
+            route: '/docs/product-features/invite-team-member',
+            label: 'Invite Team Member',
+          },
+        ],
+      },
+      {
+        type: "doc",
+        label: "Releases",
+        route: "/docs/overview/releases"
+      },
+      {
+        type: "doc",
+        label: "What's New",
+        route: "/docs/overview/whats-new"
+      },
+      {
+        type: "doc",
+        label: "Breaking Changes",
+        route: "/docs/overview/breaking-changes"
+      },
+      {
+        type: "doc",
+        label: "What's Coming",
+        route: "/docs/roadmap"
+      },
+      {
+        type: "category",
+        label: "Core Concepts",
+        route: "/docs/overview/core-concepts/overview",
+        isExpanded: false,
+        items: [
+          {
+            type: "doc",
+            label: "Architecture",
+            route: "/docs/architecture"
+          }
+        ]
+      },
+    ]
+  },
+  {
     type: 'category',
     isExpanded: false,
     label: 'Introduction',
     route: '/docs',
     items: [
-      {
-        type: 'doc',
-        label: 'What is SigNoz?',
-        route: '/docs/introduction',
-      },
       {
         type: 'category',
         isExpanded: false,
@@ -95,44 +173,7 @@ const docsSideNav = [
       },
     ],
   },
-  {
-    label: 'SigNoz Features',
-    type: 'category',
-    isExpanded: false,
-    items: [
-      {
-        type: 'doc',
-        route: '/docs/product-features/query-builder',
-        label: 'Query Builder',
-      },
-      {
-        type: 'doc',
-        route: '/docs/product-features/alert-management',
-        label: 'Alert Management',
-      },
-      {
-        type: 'doc',
-        route: '/docs/product-features/trace-explorer',
-        label: 'Trace Explorer',
-      },
-      {
-        type: 'doc',
-        route: '/docs/product-features/logs-explorer',
-        label: 'Logs Explorer',
-      },
-      {
-        type: 'doc',
-        route: '/docs/product-features/saved-view',
-        label: 'Saved View',
-        // className: 'new-doc', // Add this if you want to add a new tag in sidebar
-      },
-      {
-        type: 'doc',
-        route: '/docs/product-features/invite-team-member',
-        label: 'Invite Team Member',
-      },
-    ],
-  },
+  
   {
     label: 'APM & Distributed Tracing',
     type: 'category',
@@ -2071,18 +2112,8 @@ const docsSideNav = [
     label: 'About SigNoz',
     items: [
       {
-        route: '/docs/architecture',
-        label: 'Technical Architecture',
-        type: 'doc',
-      },
-      {
         route: '/docs/contributing',
         label: 'Contributing Guidelines',
-        type: 'doc',
-      },
-      {
-        route: '/docs/roadmap',
-        label: 'Product Roadmap',
         type: 'doc',
       },
       // 'about-signoz/architecture',
