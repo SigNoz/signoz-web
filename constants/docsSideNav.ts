@@ -94,93 +94,100 @@ const docsSideNav = [
   {
     type: 'category',
     isExpanded: false,
-    label: 'Introduction',
-    route: '/docs',
+    label: 'Setup',
+    route: '/docs/install/',
     items: [
-      {
-        type: 'category',
-        isExpanded: false,
-        label: 'Get Started',
-        route: '/docs/install/',
-        items: [
-          {
-            type: 'doc',
-            route: '/docs/cloud',
-            label: 'SigNoz Cloud',
-          },
-          {
-            type: 'category',
-            isExpanded: false,
-            label: 'Self-Host SigNoz',
-            route: '/docs/install/self-host',
-            items: [
-              {
-                type: 'doc',
-                label: 'Docker Standalone',
-                route: '/docs/install/docker',
-              },
-              {
-                type: 'doc',
-                label: 'Docker Swarm',
-                route: '/docs/install/docker-swarm',
-              },
-              {
-                type: 'doc',
-                label: 'Linux',
-                route: '/docs/install/linux',
-                className: 'new-doc',
-              },
-              {
-                type: 'category',
-                isExpanded: false,
-                label: 'Kubernetes',
-                route: '/docs/install/kubernetes',
-                items: [
+        {
+          type: 'doc',
+          route: '/docs/cloud',
+          label: 'SigNoz Cloud',
+        },
+        {
+          type: 'category',
+          isExpanded: false,
+          label: 'Self-Host SigNoz',
+          route: '/docs/install/self-host',
+          items: [
+            {
+              type: 'category',
+              isExpanded: false,
+              label: 'Installation By Docker',
+              items:[
+                {
+                  type: 'doc',
+                  label: 'Docker Standalone',
+                  route: '/docs/install/docker',
+                },
+                {
+                  type: 'doc',
+                  label: 'Docker Swarm',
+                  route: '/docs/install/docker-swarm',
+                },
+              ]
+            },
+            {
+              type: 'category',
+              label: 'Installation By Binary',
+              isExpanded: false,
+              items: [
                   {
                     type: 'doc',
-                    label: 'Deploying to AWS',
-                    route: '/docs/install/kubernetes/aws',
+                    label: 'Linux',
+                    route: '/docs/install/linux',
+                    className: 'new-doc',
                   },
-                  {
-                    type: 'doc',
-                    label: 'Deploying to GCP',
-                    route: '/docs/install/kubernetes/gcp',
-                  },
-                  {
-                    type: 'doc',
-                    label: 'Other Platform',
-                    route: '/docs/install/kubernetes/others',
-                  },
-                ],
-              },
-              {
-                type: 'doc',
-                label: 'Troubleshooting',
-                route: '/docs/install/troubleshooting',
-              },
-            ],
-          },
+              ]
+            },
+            {
+              type: 'category',
+              isExpanded: false,
+              label: 'Kubernetes',
+              route: '/docs/install/kubernetes',
+              items: [
+                {
+                  type: 'doc',
+                  label: 'Deploying to AWS',
+                  route: '/docs/install/kubernetes/aws',
+                },
+                {
+                  type: 'doc',
+                  label: 'Deploying to GCP',
+                  route: '/docs/install/kubernetes/gcp',
+                },
+                {
+                  type: 'doc',
+                  label: 'Other Platform',
+                  route: '/docs/install/kubernetes/others',
+                },
+              ],
+            },
+            {
+              type: 'doc',
+              label: 'Troubleshooting',
+              route: '/docs/install/troubleshooting',
+            },
+          ],
+        },
 
-          {
-            type: 'category',
-            isExpanded: false,
-            label: 'Install OTel collector',
-            items: [
-              {
-                route: '/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine',
-                type: 'doc',
-                label: 'VM',
-              },
-              {
-                route: '/docs/tutorial/kubernetes-infra-metrics',
-                type: 'doc',
-                label: 'Kubernetes',
-              },
-            ],
-          },
-        ],
-      },
-    ],
+        {
+          type: 'category',
+          isExpanded: false,
+          label: 'Install OTel collector',
+          items: [
+            {
+              route: '/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine',
+              type: 'doc',
+              label: 'VM',
+            },
+            {
+              route: '/docs/tutorial/kubernetes-infra-metrics',
+              type: 'doc',
+              label: 'Kubernetes',
+            },
+          ],
+        },
+      ],
+
   },
   
   {
