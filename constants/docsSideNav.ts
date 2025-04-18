@@ -604,6 +604,12 @@ const docsSideNav = [
             route: '/docs/instrumentation/swift',
           },
           {
+            type: 'doc',
+            label: 'Temporal',
+            route: '/docs/instrumentation/temporal-instrumentation/opentelemetry-temporal-instrumentation',
+            className: 'new-doc'
+          },
+          {
             type: 'category',
             isExpanded: false,
             label: 'Manual Instrumentation',
