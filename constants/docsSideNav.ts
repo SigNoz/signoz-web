@@ -169,8 +169,23 @@ const docsSideNav = [
                 },
                 {
                   type: 'doc',
+                  label: 'Deploying to AKS',
+                  route: '/docs/install/kubernetes/aks',
+                },
+                {
+                  type: 'doc',
+                  label: 'Deploying to Digital Ocean',
+                  route: '/docs/install/digital-ocean',
+                },
+                {
+                  type: 'doc',
                   label: 'Other Platform',
                   route: '/docs/install/kubernetes/others',
+                },
+                {
+                  type: 'doc',
+                  label: 'Deploying to Local',
+                  route: '/docs/install/kubernetes/local',
                 },
               ],
             },
