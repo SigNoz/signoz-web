@@ -1,9 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Slider, Tooltip } from '@nextui-org/react'
-import { ArrowUpRight, ArrowRight } from 'lucide-react'
-import Link from 'next/link'
+import { Slider } from '@nextui-org/react'
+import { ArrowUpRight, ArrowRight, Camera, Share2, Check } from 'lucide-react'
 import Button from '../../../../components/Button/Button'
 import TrackingLink from '../../../../components/TrackingLink'
 
@@ -108,6 +107,16 @@ const PricingCalculator: React.FC = () => {
   // Used to track whether we're client-side rendered
   const [isMounted, setIsMounted] = useState(false)
 
+  // New ref for the calculator element
+  const calculatorRef = useRef<HTMLDivElement>(null)
+
+  // State for showing share success message
+  const [showShareSuccess, setShowShareSuccess] = useState(false)
+
+  // Add a state for clipboard copy success
+  const [showCopySuccess, setShowCopySuccess] = useState(false)
+
+  // Update isMounted after component mounts
   useEffect(() => {
     setIsMounted(true)
   }, [])
@@ -211,6 +220,206 @@ const PricingCalculator: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // Function to handle screenshot capture and sharing
+  const handleCaptureAndShare = async () => {
+    // Get elements by their IDs
+    const shareButton = document.getElementById('share-calculator-button') as HTMLElement | null
+    const ctaButton = document.getElementById('pricing-cta-button') as HTMLElement | null
+    const headingElement = document.querySelector('.pricing-calculator h3') as HTMLElement | null
+
+    // Find all select elements that need styling fix for screenshots
+    const selectElements = calculatorRef.current?.querySelectorAll('select') as
+      | NodeListOf<HTMLSelectElement>
+      | undefined
+
+    // Store original values to restore later
+    let originalHeadingText = ''
+    let originalButtonText = ''
+    // Array to store original select styles
+    const originalSelectStyles: {
+      element: HTMLSelectElement
+      appearance: string
+      backgroundImage: string
+      backgroundPosition: string
+    }[] = []
+
+    if (headingElement) {
+      originalHeadingText = headingElement.textContent || ''
+      headingElement.textContent =
+        'SigNoz Monthly Estimate - Simple Usage-based Predictable Observability Costs'
+    }
+
+    if (ctaButton) {
+      originalButtonText = ctaButton.innerText
+      // Just replace the text
+      ctaButton.innerText = 'Visit signoz.io for more details'
+    }
+
+    // Fix the appearance of select elements for screenshot
+    if (selectElements) {
+      selectElements.forEach((select) => {
+        // Store original styles
+        originalSelectStyles.push({
+          element: select,
+          appearance: select.style.appearance,
+          backgroundImage: select.style.backgroundImage,
+          backgroundPosition: select.style.backgroundPosition,
+        })
+
+        // Apply fixed styles for screenshot
+        select.style.appearance = 'none'
+        select.style.backgroundImage =
+          "url(\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23C0C1C3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")"
+        select.style.backgroundRepeat = 'no-repeat'
+        select.style.backgroundPosition = 'right 0.25rem center'
+        select.style.paddingRight = '1.5rem'
+      })
+    }
+
+    if (shareButton) {
+      // Hide the share button before capture
+      shareButton.style.display = 'none'
+    }
+
+    try {
+      // Lazy load the html-to-image library
+      const htmlToImage = await import('html-to-image')
+
+      if (!calculatorRef.current) return
+
+      // Capture the calculator element as a PNG image
+      const dataUrl = await htmlToImage.toPng(calculatorRef.current, {
+        quality: 0.95,
+        backgroundColor: '#161A22', // Match SigNoz dark theme
+      })
+
+      // Restore original elements
+      if (headingElement) {
+        headingElement.textContent = originalHeadingText
+      }
+
+      if (ctaButton) {
+        ctaButton.innerText = originalButtonText
+      }
+
+      // Restore original select styles
+      originalSelectStyles.forEach((item) => {
+        item.element.style.appearance = item.appearance
+        item.element.style.backgroundImage = item.backgroundImage
+        item.element.style.backgroundPosition = item.backgroundPosition
+        item.element.style.backgroundRepeat = ''
+        item.element.style.paddingRight = ''
+      })
+
+      if (shareButton) {
+        shareButton.style.display = ''
+      }
+
+      // Try to copy to clipboard first (avoiding fetch to prevent CSP issues)
+      try {
+        if (navigator.clipboard && navigator.clipboard.write) {
+          // Convert base64 data URL to blob without using fetch
+          // Extract the base64 part (remove the data:image/png;base64, prefix)
+          const base64Data = dataUrl.split(',')[1]
+          // Convert base64 to binary
+          const byteCharacters = atob(base64Data)
+          // Create a byte array
+          const byteArrays: Uint8Array[] = []
+          for (let i = 0; i < byteCharacters.length; i += 512) {
+            const slice = byteCharacters.slice(i, i + 512)
+            const byteNumbers = new Array(slice.length)
+            for (let j = 0; j < slice.length; j++) {
+              byteNumbers[j] = slice.charCodeAt(j)
+            }
+            const byteArray = new Uint8Array(byteNumbers)
+            byteArrays.push(byteArray)
+          }
+          // Create blob
+          const blob = new Blob(byteArrays, { type: 'image/png' })
+
+          // Write to clipboard
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              [blob.type]: blob,
+            }),
+          ])
+
+          // Show success message for clipboard
+          setShowCopySuccess(true)
+          setTimeout(() => setShowCopySuccess(false), 3000)
+          return
+        }
+      } catch (clipboardError) {
+        console.log('Clipboard write failed, falling back to other methods', clipboardError)
+      }
+
+      // Try using Web Share API for mobile devices
+      if (navigator.share) {
+        try {
+          // Create blob without using fetch (same method as above)
+          const base64Data = dataUrl.split(',')[1]
+          const byteCharacters = atob(base64Data)
+          const byteArrays: Uint8Array[] = []
+          for (let i = 0; i < byteCharacters.length; i += 512) {
+            const slice = byteCharacters.slice(i, i + 512)
+            const byteNumbers = new Array(slice.length)
+            for (let j = 0; j < slice.length; j++) {
+              byteNumbers[j] = slice.charCodeAt(j)
+            }
+            const byteArray = new Uint8Array(byteNumbers)
+            byteArrays.push(byteArray)
+          }
+          const blob = new Blob(byteArrays, { type: 'image/png' })
+
+          const file = new File([blob], 'signoz-pricing-estimate.png', { type: 'image/png' })
+
+          await navigator.share({
+            title: 'SigNoz Pricing Estimate',
+            text: 'Check out my SigNoz pricing estimate',
+            files: [file],
+          })
+          return
+        } catch (error) {
+          console.log('Web Share API not supported, falling back to download')
+        }
+      }
+
+      // Fallback to download (direct from data URL, no fetch needed)
+      const link = document.createElement('a')
+      link.download = 'signoz-pricing-estimate.png'
+      link.href = dataUrl
+      link.click()
+
+      // Show success message
+      setShowShareSuccess(true)
+      setTimeout(() => setShowShareSuccess(false), 3000)
+    } catch (error) {
+      console.error('Error capturing calculator:', error)
+
+      // Restore original state in case of error
+      if (headingElement) {
+        headingElement.textContent = originalHeadingText
+      }
+
+      if (ctaButton) {
+        ctaButton.innerText = originalButtonText
+      }
+
+      // Restore original select styles in case of error
+      originalSelectStyles.forEach((item) => {
+        item.element.style.appearance = item.appearance
+        item.element.style.backgroundImage = item.backgroundImage
+        item.element.style.backgroundPosition = item.backgroundPosition
+        item.element.style.backgroundRepeat = ''
+        item.element.style.paddingRight = ''
+      })
+
+      if (shareButton) {
+        shareButton.style.display = ''
+      }
+    }
+  }
+
   // Render a slider with consistent styling
   const renderSlider = (
     value: number,
@@ -263,41 +472,57 @@ const PricingCalculator: React.FC = () => {
     <div
       id="estimate-your-monthly-bill"
       className="pricing-calculator mb-6 mt-0 w-full rounded-md border border-dashed border-signoz_slate-400 p-3 md:p-4"
+      ref={calculatorRef}
     >
-      <div className="mb-4">
-        <span className="group relative text-lg font-semibold text-signoz_vanilla-100 md:text-2xl">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-signoz_vanilla-100 md:text-xl">
           Estimate your monthly bill
           {isMounted && (
             <a
               href="#estimate-your-monthly-bill"
               onClick={copyLinkToClipboard}
-              className="ml-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-              aria-label="Copy link to this section"
+              className="ml-2 inline-block rounded-md bg-signoz_ink-400 p-0.5 text-signoz_vanilla-400 transition-colors hover:bg-signoz_ink-300 hover:text-signoz_vanilla-300"
+              title="Copy link to this section"
+              aria-label="Copy link to pricing calculator"
             >
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="#4E74F8"
-                className="linkicon h-6 w-6"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
-                <path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
               </svg>
             </a>
           )}
-        </span>
-        {isMounted && (
-          <p className="mt-1 text-sm text-signoz_vanilla-400">
-            You can also set data ingestion limits so you never get a surprise bill.
-            <Link
-              href="https://signoz.io/docs/ingestion/signoz-cloud/keys/"
-              className="ml-1 font-medium text-signoz_robin-400"
-            >
-              Learn more
-              <ArrowUpRight className="inline" size={16} />
-            </Link>
-          </p>
-        )}
+        </h3>
+        <button
+          id="share-calculator-button"
+          onClick={handleCaptureAndShare}
+          className="flex items-center justify-center gap-2 rounded-md border border-signoz_slate-400 bg-transparent px-3 py-2 text-sm text-signoz_vanilla-100 transition-all hover:bg-signoz_slate-400/20"
+        >
+          {showCopySuccess ? (
+            <>
+              <Check size={14} className="text-green-500" />
+              {isMobile ? 'Copied!' : 'Copied to Clipboard!'}
+            </>
+          ) : showShareSuccess ? (
+            <>
+              <Check size={14} className="text-green-500" />
+              {isMobile ? 'Shared!' : 'Captured!'}
+            </>
+          ) : (
+            <>
+              <Camera size={14} />
+              {isMobile ? 'Share' : 'Share Estimates with Your Team'}
+            </>
+          )}
+        </button>
       </div>
 
       {isMobile ? (
@@ -882,7 +1107,10 @@ const PricingCalculator: React.FC = () => {
           clickText="Get Started - Free"
           clickLocation="Pricing Calculator"
         >
-          <Button className="flex w-full items-center justify-center sm:w-auto">
+          <Button
+            className="flex w-full items-center justify-center sm:w-auto"
+            id="pricing-cta-button"
+          >
             Get Started - Free
             <ArrowRight size={14} className="ml-2" />
           </Button>
