@@ -1718,6 +1718,23 @@ const docsSideNav = [
           },
         ],
       },
+      {
+        label: 'Jenkins',
+        type: 'category',
+        isExpanded: false,
+        items: [
+          {
+            type: 'doc',
+            route: '/docs/cicd/jenkins/agent-node-monitoring',
+            label: 'Metrics',
+          },
+          {
+            type: 'doc',
+            route: '/docs/cicd/jenkins/jenkins-tracing',
+            label: 'Traces',
+          },
+        ],
+      }
     ],
   },
   {
