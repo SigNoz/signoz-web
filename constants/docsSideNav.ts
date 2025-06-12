@@ -2162,6 +2162,11 @@ const docsSideNav = [
         label: 'SQL Database Metrics',
       },
       {
+        type: 'doc',
+        route: '/docs/azure-monitoring/mysql-flexible-server',
+        label: 'MySQL Flexible Server',
+      },
+      {
         type: 'category',
         isExpanded: false,
         label: 'Azure Blob Storage',
