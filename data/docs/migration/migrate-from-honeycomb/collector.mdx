@@ -1,0 +1,177 @@
+---
+date: 2025-07-03
+id: migrate-from-honeycomb-collector
+title: Setting up collector to send metrics to Signoz
+description: Document describing how to setup a collector
+---
+
+This guide walks you through migrating from Honeycomb's data collection tools ([HTP](https://www.honeycomb.io/telemetry-pipeline) or [Refinery](https://docs.honeycomb.io/manage-data-volume/sample/honeycomb-refinery/)) to SigNoz using the [OpenTelemetry Collector](https://signoz.io/blog/opentelemetry-collector-complete-guide/).
+
+## Migration Overview
+
+The migration involves four stages:
+1. **Audit** - Document current Honeycomb setup
+2. **Configure** - Create OpenTelemetry Collector config for SigNoz
+3. **Deploy & Validate** - Test the new pipeline
+4. **Finalize** - Switch to SigNoz and decommission Honeycomb
+
+## Prerequisites
+
+
+- Administrator access to Honeycomb and SigNoz accounts
+- SigNoz [Ingestion Key and endpoint](https://signoz.io/docs/ingestion/signoz-cloud/overview/) from Settings → Ingestion Settings
+- Infrastructure access for deploying the OpenTelemetry Collector
+- Basic YAML knowledge
+
+## Step 1: Audit Current Setup
+
+### Identify Your Tool
+- **[Honeycomb Telemetry Pipeline (HTP)](https://www.honeycomb.io/telemetry-pipeline)** - UI-driven pipeline
+- **[Refinery](https://docs.honeycomb.io/manage-data-volume/sample/honeycomb-refinery/)** - Self-hosted sampling service
+- **[Standard OTel Collector](https://signoz.io/blog/opentelemetry-collector-complete-guide/)** - Already using OpenTelemetry
+
+### Document Configuration
+**For HTP:**
+Go through the HTP UI and document every source and processor. The goal is to create a direct mapping from the UI configuration to an OpenTelemetry Collector `config.yaml` file.
+
+| HTP Component | OTel Collector Equivalent | Example OTel Config Snippet |
+| :--- | :--- | :--- |
+| **Source: OTLP** | `otlp` receiver | `receivers: { otlp: { protocols: { grpc: {}, http: {} } } }` |
+| **Source: Host Metrics** | `hostmetrics` receiver | `receivers: { hostmetrics: { collection_interval: 60s, scrapers: { cpu, memory } } }` |
+| **Source: Prometheus** | `prometheus` receiver | `receivers: { prometheus: { config: { scrape_configs: [ ... ] } } }` |
+| **Processor: Parse JSON** | `json_parser` processor | `processors: { json_parser: { json_key: "log", add_to: "attributes" } }` |
+| **Processor: Add Fields** | `attributes` processor | `processors: { attributes: { actions: [ { key: "new.field", action: "insert", value: "static-value" } ] } }` |
+| **Processor: Filter** | `filter` processor | `processors: { filter: { traces: { an_include: { match_type: "strict", attributes: [ { key: "http.status_code", value: 500 } ] } } } }` |
+| **Processor: Sample** | `probabilistic_sampler` | `processors: { probabilistic_sampler: { sampling_percentage: 10 } }` |
+
+
+**For Refinery:**
+Refinery's core function is trace-aware sampling. This logic maps directly to the `tail_sampling` processor in the OpenTelemetry Collector, which makes decisions after all spans for a trace have arrived.
+
+| Refinery Concept | OTel `tail_sampling` Equivalent | Example OTel Config Snippet |
+| :--- | :--- | :--- |
+| **Rules-Based Sampling** | `latency` or `status_code` policy | `policies: [ { name: "slow-traces", type: "latency", latency: { threshold_ms: 2000 } } ]` |
+| **Dynamic Sampling** | `string_attribute` policy | `policies: [ { name: "user-id-sampling", type: "string_attribute", string_attribute: { key: "trace.user_id", values: ["123", "456"] } } ]` |
+| **Deterministic Sampling** | `probabilistic` policy | `policies: [ { name: "sample-20-percent", type: "probabilistic", probabilistic: { sampling_percentage: 20 } } ]` |
+| **Throughput Sampling** | `rate_limiting` policy | `policies: [ { name: "limit-per-second", type: "rate_limiting", rate_limiting: { spans_per_second: 100 } } ]` |
+
+## Step 2: Component Mapping
+
+| Honeycomb Component | OpenTelemetry Equivalent | Notes |
+|:-------------------|:-------------------------|:------|
+| [HTP Sources](https://docs.honeycomb.io/send-data/telemetry-pipeline/sources/honeycomb-telemetry-pipeline/) | [Receivers](https://signoz.io/blog/opentelemetry-collector-complete-guide/) | Host Metrics → `hostmetrics` receiver |
+| [HTP Processors](https://docs.honeycomb.io/send-data/telemetry-pipeline/processors/) | [Processors](https://signoz.io/blog/opentelemetry-collector-complete-guide/) | UI logic → YAML processors |
+| [Refinery](https://docs.honeycomb.io/manage-data-volume/sample/honeycomb-refinery/) | [`tail_sampling` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor) | Sampling policies in YAML |
+
+## Step 3: Configure [OpenTelemetry Collector](https://signoz.io/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine/)
+
+### Basic Configuration Structure
+
+```yaml
+# config.yaml
+receivers:
+  hostmetrics:
+    collection_interval: 60s
+    scrapers:
+      cpu:
+      memory:
+      disk:
+      network:
+  
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'my-app'
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['localhost:8080']
+
+processors:
+  batch:
+  
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 50000
+    policies:
+      - name: errors-policy
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      
+      - name: slow-traces-policy
+        type: latency
+        latency:
+          threshold_ms: 2000
+      
+      - name: probabilistic-policy
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 20
+
+exporters:
+  # For SigNoz Cloud
+  otlphttp:
+    endpoint: "https://ingest.<region>.signoz.cloud:443"
+    headers:
+      "signoz-ingestion-key": "<YOUR_SIGNOZ_INGESTION_KEY>"
+  
+  # For Self-hosted SigNoz
+  otlp:
+    endpoint: "your-signoz-otel-collector:4317"
+    tls:
+      insecure: true  # Use proper TLS in production
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, tail_sampling]
+      exporters: [otlphttp]
+    metrics:
+      receivers: [hostmetrics, prometheus]
+      processors: [batch]
+      exporters: [otlphttp]
+```
+
+### Key Configuration Notes
+
+- **SigNoz Cloud**: Uses port 443 for both OTLP/HTTP and OTLP/gRPC protocols
+- **Ingestion Key**: Found in Settings → Ingestion Settings
+- **Regions**: Check the [ingestion overview](https://signoz.io/docs/ingestion/signoz-cloud/overview/) for your specific endpoint
+
+## Step 4: Deploy & Validate
+
+### Safe Deployment Strategy
+1. **Start with dual-shipping** - Configure both Honeycomb and SigNoz exporters
+2. **Deploy to staging first** - Test before production
+3. **Validate data flow** - Check SigNoz dashboards and traces
+4. **Monitor collector performance** - Watch CPU/memory usage
+
+### Validation Steps
+- Log into SigNoz and verify data appears in Metrics and Traces explorers
+- Compare data patterns between Honeycomb and SigNoz
+- Check OpenTelemetry Collector logs for errors
+
+## Common Issues & Solutions
+
+| Issue | Solution |
+|:------|:---------|
+| **No data in SigNoz** | • Check collector logs<br />• Verify ingestion key and endpoint<br />• Ensure port 443 is accessible |
+| **YAML syntax errors** | Use a [YAML validator](https://onlineyamllint.com/) |
+| **High collector resource usage** | • Set resource limits<br />• Tune `tail_sampling` memory settings |
+| **Data differences** | Review processor configurations carefully |
+## Post-Migration Steps
+
+1. **Recreate dashboards** in SigNoz
+2. **Configure [alerts](https://signoz.io/docs/userguide/alerts/)** - Start with critical P0/P1 alerts
+3. **Train team** on SigNoz interface
+4. **Decommission Honeycomb** after stability period (1-2 weeks)
+
+## Additional Resources
+
+- [SigNoz OpenTelemetry Collector Guide](https://signoz.io/blog/opentelemetry-collector-complete-guide/)
+- [SigNoz Ingestion Documentation](https://signoz.io/docs/ingestion/signoz-cloud/overview/)
+- [OpenTelemetry Binary Usage](https://signoz.io/docs/tutorial/opentelemetry-binary-usage-in-virtual-machine/)
+- [SigNoz Troubleshooting](https://signoz.io/docs/troubleshooting/signoz-cloud/ingestion-troubleshooting/)
+
+
