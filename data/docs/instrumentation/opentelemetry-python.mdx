@@ -790,6 +790,116 @@ Validate your traces in SigNoz:
 2. In SigNoz, open the `Services` tab. Hit the `Refresh` button on the top right corner, and your application should appear in the list of `Applications`.
 3. Go to the `Traces` tab, and apply relevant filters to see your application’s traces.
 
+## Link logs and traces
+
+Logs and traces provide valuable insights into an app's performance. While logs capture event details with timestamps, traces track a request’s journey across different components, highlighting latency and bottlenecks. 
+Linking logs and traces using a common trace ID helps you pinpoint issues, analyze failures, and optimize performance.
+
+![An image displaying linked logs and traces to SigNoz](images/logs-traces-flow.png)
+
+### Log-Trace Correlation
+
+To correlate logs with traces in a Python app, you should use:
+
+* OTEL_PYTHON_LOG_CORRELATION environment variable.
+* LoggingInstrumentor Python module for native logging instrumentation. 
+
+1. Set the environment variables. 
+    ```bash
+    OTEL_EXPORTER_OTLP_ENDPOINT="<your-signoz-otlp-endpoint>"
+    OTEL_EXPORTER_OTLP_HEADERS="signoz-ingestion-key=<your-signoz-key>"
+    OTEL_PYTHON_LOG_CORRELATION=true
+    ```
+1. Configure the logging formatter to include trace_id and span_id.
+    ```python
+    import logging
+    import requests
+    import os
+
+    class SigNozLogFormatter(logging.Formatter):
+        def format(self, record):
+            trace_id = getattr(record, "otelTraceID", "00000000000000000000000000000000")
+            span_id = getattr(record, "otelSpanID", "0000000000000000")
+            log_data = {
+                "trace_id": trace_id,
+                "span_id": span_id,
+                "severity_text": record.levelname,
+                "message": record.getMessage(),
+                "attributes": {
+                    "service": os.getenv("SERVICE_NAME", "coffee-shop"),
+                    "logger_name": record.name,
+                    "module": record.module,
+                },
+            }
+        return log_data
+
+    logger = logging.getLogger("signozLogger")
+    logger.setLevel(logging.INFO)
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(SigNozLogFormatter())
+    logger.addHandler(handler)
+    ```
+
+1. Send logs to SigNoz to link them with traces.
+    ```python
+    def send_log_to_signoz(log_data):
+        SIGNOZ_LOGS_URL = os.getenv("SIGNOZ_LOGS_URL", "<SigNoz-logs-url>")
+        SIGNOZ_INGESTION_KEY = os.getenv("SIGNOZ_INGESTION_KEY", "<SigNoz-ingestion-key>")
+
+        headers = {
+            "signoz-ingestion-key": SIGNOZ_INGESTION_KEY,
+            "Content-Type": "application/json"
+        }
+
+        try:
+            response = requests.post(SIGNOZ_LOGS_URL, headers=headers, json=[log_data])
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to send log to SigNoz: {e}")
+    ```
+
+For example, consider a coffee shop app. You have to log a coffee order request using OpenTelemetry’s auto-instrumentation and structured logging.
+
+```python
+def get_coffee(coffee_id):
+    logger.info(f"Request received for coffee ID {coffee_id}")
+
+    coffee = next((c for c in coffees if c["id"] == coffee_id), None)
+    if not coffee:
+        log_record = logger.handlers[0].formatter.format(
+            logger.makeRecord(
+                name="signozLogger",
+                level=logging.INFO,
+                fn="app.py",
+                lno=33,
+                msg=f"Coffee ID {coffee_id} not found",
+                args=None,
+                exc_info=None
+            )
+        )
+        send_log_to_signoz(log_record)
+        return jsonify({"error": "Coffee not found"}), 404
+
+    log_record = logger.handlers[0].formatter.format(
+        logger.makeRecord(
+            name="signozLogger",
+            level=logging.INFO,
+            fn="app.py",
+            lno=41,
+            msg=f"Coffee order for {coffee['name']} processed successfully",
+            args=None,
+            exc_info=None
+        )
+    )
+    send_log_to_signoz(log_record)
+    return jsonify(coffee)
+```
+
+
+![An image displaying a specifc log with traces in SigNoz](images/sample-log-coffee.png)
+
+
 {/* You might see other dummy applications if you’re using SigNoz for the first time. You can remove it by following the docs [here](https://signoz.io/docs/operate/docker-standalone/#remove-the-sample-application). */}
 
 {/* <figure data-zoomable align='center'>
