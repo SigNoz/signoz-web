@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation'
 import DocContent from '@/components/DocContent/DocContent'
 
 export const dynamicParams = false
+export const dynamic = 'force-static'
 
 export async function generateMetadata({
   params,
@@ -37,7 +38,9 @@ export async function generateMetadata({
 }
 
 export const generateStaticParams = async () => {
-  const paths = allDocs.map((p) => ({ slug: p.slug?.split('/') }))
+  const paths = allDocs
+    .filter((p) => p.slug !== 'introduction') // if not filtered, treats introduction as a [...slug] and does not apply special layout
+    .map((p) => ({ slug: p.slug?.split('/') }))
 
   return paths
 }
