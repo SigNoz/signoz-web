@@ -1,7 +1,6 @@
 import React from 'react'
 import Heading from '../../components/ui/Heading'
 import Card from '../Card/card'
-import Divider from '@/components/ui/Divider'
 
 const BuildForDevelopers = () => {
   const REASONS = [
@@ -33,7 +32,6 @@ const BuildForDevelopers = () => {
   ]
   return (
     <section className="!mx-auto !w-[100vw] border !border-l-0 !border-t-0 border-dashed border-signoz_slate-400 md:!w-[80vw]">
-      <div className=" h-12 w-full border !border-r-0 !border-t-0 border-dashed border-signoz_slate-400" />
       <div className="overflow-hidden">
         <div
           className={`relative bg-[url('/img/background_blur/Perlin_noise.png')] bg-[length:85%] bg-[center_top_8rem] bg-no-repeat
