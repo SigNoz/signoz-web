@@ -1467,6 +1467,11 @@ const docsSideNav = [
         route: '/docs/cost-meter/meter-explorer',
         label: 'Meter Explorer',
       },
+      {
+        type: 'doc',
+        route: '/docs/metrics-management/extracting-sum-and-count-from-histogram',
+        label: 'Extracting sum and count from histogram',
+      }
     ],
   },
   {
