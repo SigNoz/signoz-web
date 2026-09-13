@@ -5,6 +5,7 @@ import remarkParse from 'remark-parse'
 import remarkMdx from 'remark-mdx'
 import { getListicleConfig, getListicleItems } from '../../constants/listicles/utils'
 import type { ListicleConfig } from '../../components/Listicle/types'
+import { FALLBACK_REGIONS, regionTableRows } from '../../components/Region/regions'
 
 const HOSTING_DECISION_ITEMS = [
   {
@@ -466,10 +467,38 @@ const createKnownComponentStubs = (
   },
   TroubleshootingWizard: createTroubleshootingWizardStub(),
   RegionTable: () => {
+    // The rendered table is client-side, so this stub prints the built-in
+    // region list. A pointer to the rendered page would name data that agents
+    // cannot see.
+    const columns = ['Name', 'Cloud Provider', 'Cloud Region', 'Ingestion Endpoint']
     return React.createElement(
-      'p',
+      'table',
       null,
-      'SigNoz Cloud region and endpoint reference is available in the rendered docs.'
+      React.createElement(
+        'thead',
+        null,
+        React.createElement(
+          'tr',
+          null,
+          ...columns.map((column) => React.createElement('th', { key: column }, column))
+        )
+      ),
+      React.createElement(
+        'tbody',
+        null,
+        ...regionTableRows(FALLBACK_REGIONS).map((row) =>
+          React.createElement(
+            'tr',
+            { key: `${row.name}-${row.cloudRegion}` },
+            React.createElement('td', null, row.name),
+            React.createElement('td', null, row.provider.toUpperCase()),
+            React.createElement('td', null, row.cloudRegion),
+            // A bare URL gets its colon escaped inside a table cell. A code
+            // span keeps the value literal, so a reader can copy or match it.
+            React.createElement('td', null, React.createElement('code', null, row.dns))
+          )
+        )
+      )
     )
   },
   // Marketing CTA: no informational value for agents reading the docs as markdown.

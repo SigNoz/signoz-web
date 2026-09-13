@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { useRegion } from './RegionContext'
+import { regionTableRows } from './regions'
 import { Copy, CheckCircle } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { AppTooltip } from '@/components/ui/AppTooltip'
@@ -70,25 +71,12 @@ const CopyCell = ({ text }: { text: string }) => {
 }
 
 const RegionTable = () => {
-  const { regions, isLoading } = useRegion()
+  const { regions } = useRegion()
 
-  if (isLoading) {
-    return (
-      <div className="w-full overflow-x-auto">
-        <div className="h-32 w-full animate-pulse rounded bg-[var(--l3-background)]" />
-      </div>
-    )
-  }
-
-  // Flatten the data for the table
-  const tableData = regions.flatMap((region) =>
-    region.clusters.map((cluster) => ({
-      name: region.name,
-      cloudRegion: cluster.cloud_region,
-      provider: cluster.cloud_provider,
-      dns: `https://ingest.${region.dns}`,
-    }))
-  )
+  // RegionContext seeds FALLBACK_REGIONS and never empties them, so there is
+  // always a row to draw and no skeleton is needed. If the table waited on
+  // isLoading, the server HTML would carry no region values.
+  const tableData = regionTableRows(regions)
 
   return (
     <div className="my-8 w-full overflow-x-auto">

@@ -116,6 +116,10 @@ export function proxy(req: NextRequest) {
           custom_accept_header: acceptHeader,
           custom_content_type_header: contentTypeHeader,
           custom_prefers_markdown: prefersMarkdown,
+          // Agents reach markdown two ways, and the Accept header is the rarer
+          // one. Log the suffix apart from `prefersMarkdown` to keep the two
+          // routes separable.
+          custom_markdown_suffix: hasMdSuffix,
         },
         anonymousId: growthBookAnonymousId,
       })
