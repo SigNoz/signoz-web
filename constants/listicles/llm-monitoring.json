@@ -25,6 +25,12 @@
       "icon": "/img/icons/listicle/si-anthropic.svg"
     },
     {
+      "name": "Antigravity CLI",
+      "href": "/docs/antigravity-cli-monitoring/",
+      "clickName": "Antigravity CLI Monitoring",
+      "icon": "/svgs/icons/LLMMonitoring/antigravity-cli-logo.webp"
+    },
+    {
       "name": "AutoGen",
       "href": "/docs/autogen-observability/",
       "clickName": "AutoGen Monitoring",
@@ -79,10 +85,16 @@
       "icon": "/svgs/icons/LLMMonitoring/crewai-logo.svg"
     },
     {
-      "name": "Cursor IDE",
+      "name": "Cursor AI",
       "href": "/docs/cursor-observability/",
-      "clickName": "Cursor IDE Monitoring",
+      "clickName": "Cursor AI Monitoring",
       "icon": "/svgs/icons/LLMMonitoring/cursor-logo.svg"
+    },
+    {
+      "name": "Daytona",
+      "href": "/docs/daytona-monitoring/",
+      "clickName": "Daytona Monitoring",
+      "icon": "/svgs/icons/LLMMonitoring/daytona-logo.webp"
     },
     {
       "name": "DeepSeek API",
@@ -220,6 +232,12 @@
       "href": "/docs/mistral-observability/",
       "clickName": "Mistral AI Monitoring",
       "icon": "/img/docs/llm/mistral/mistral-logo.webp"
+    },
+    {
+      "name": "Muse Spark",
+      "href": "/docs/muse-spark-monitoring/",
+      "clickName": "Muse Spark Monitoring",
+      "icon": "/svgs/icons/LLMMonitoring/muse-spark-logo.svg"
     },
     {
       "name": "n8n Cloud",

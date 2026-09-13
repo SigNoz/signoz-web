@@ -3,9 +3,15 @@ import type { NextRequest } from 'next/server'
 import { waitUntil, ipAddress } from '@vercel/functions'
 import { v4 as uuidv4 } from 'uuid'
 import { NOT_FOUND_PATHNAME_HEADER } from '@/components/not-found/constants'
-import { detectBotFromUserAgent, logEventServerSide } from './utils/logEvent'
+import {
+  detectBotFromUserAgent,
+  isAnalyticsExcludedUserAgent,
+  logEventServerSide,
+} from './utils/logEvent'
+import { getPageType } from '@/utils/getPageType'
 import {
   buildDocsMarkdownRewritePath,
+  hasDocsMarkdownExtension,
   shouldRewriteDocsToMarkdown,
 } from '@/utils/docs/markdownRouting'
 import { buildDocsOnboardingPath, isDocsPathname } from '@/utils/docs/onboardingPath'
@@ -54,20 +60,19 @@ export function proxy(req: NextRequest) {
   // Get user agent and detect bot
   const userAgent = req.headers.get('user-agent') || ''
   const { isBot, botType } = detectBotFromUserAgent(userAgent)
+  const isExcludedFromAnalytics = isAnalyticsExcludedUserAgent(userAgent)
 
   const acceptHeader = req.headers.get('accept') || ''
   const contentTypeHeader = req.headers.get('content-type') || ''
 
-  const prefersMarkdown = acceptHeader.toLowerCase().includes('text/markdown')
-
   // Get request details
   const pathname = req.nextUrl.pathname
 
-  // Agents reach markdown two ways, and the Accept header is the rarer one.
-  // `prefersMarkdown` alone logs a `.md` request as HTML, so log both and keep
-  // the markdown split measurable.
-  const hasMarkdownSuffix = hasMarkdownExtension(pathname)
-  const wantsMarkdown = prefersMarkdown || hasMarkdownSuffix
+  const prefersMarkdownAccept = acceptHeader.toLowerCase().includes('text/markdown')
+  const hasMdSuffix = hasMarkdownExtension(pathname) || hasDocsMarkdownExtension(pathname)
+  const hasMarkdownAlternate =
+    servesMarkdownAlternate(pathname) || shouldRewriteDocsToMarkdown(pathname, false)
+  const prefersMarkdown = prefersMarkdownAccept || (hasMdSuffix && hasMarkdownAlternate)
 
   // Redirect legacy ?source=onboarding URLs to /docs-onboarding/ path
   const isLegacyOnboardingDocsRequest =
@@ -90,7 +95,7 @@ export function proxy(req: NextRequest) {
   requestHeaders.set(GROWTHBOOK_ANONYMOUS_ID_HEADER, growthBookAnonymousId)
 
   // Log bot requests
-  if (isBot) {
+  if (isBot && !isExcludedFromAnalytics) {
     // Use waitUntil to ensure logging completes before function termination
     waitUntil(
       logEventServerSide({
@@ -111,8 +116,10 @@ export function proxy(req: NextRequest) {
           custom_accept_header: acceptHeader,
           custom_content_type_header: contentTypeHeader,
           custom_prefers_markdown: prefersMarkdown,
-          custom_markdown_suffix: hasMarkdownSuffix,
-          custom_wants_markdown: wantsMarkdown,
+          // Agents reach markdown two ways, and the Accept header is the rarer
+          // one. Log the suffix apart from `prefersMarkdown` to keep the two
+          // routes separable.
+          custom_markdown_suffix: hasMdSuffix,
         },
         anonymousId: growthBookAnonymousId,
       })
@@ -162,6 +169,35 @@ export function proxy(req: NextRequest) {
     })
     if (INCLUDE_MARKDOWN_REWRITE_DEBUG_HEADER) {
       res.headers.set('x-markdown-rewrite', 'true')
+    }
+
+    // Markdown responses run no client JS, so log the page view server-side as a Bot Page Request.
+    if (!isBot && !isExcludedFromAnalytics && req.method === 'GET') {
+      const pageTypePath = pathname.replace(/\/+$/, '').replace(/\.md$/, '') || '/'
+
+      waitUntil(
+        logEventServerSide({
+          eventName: 'Bot Page Request',
+          eventType: 'track',
+          attributes: {
+            pageLocation: pathname,
+            pageType: getPageType(pageTypePath),
+            pageUrl: req.nextUrl.toString(),
+            ...(referer !== 'direct' ? { pageReferrer: referer } : {}),
+            custom_source: 'server',
+            custom_prefers_markdown: true,
+            custom_content_type: 'text/markdown',
+            custom_user_agent: userAgent,
+            custom_os: getOSFromUserAgent(userAgent),
+            custom_ip: ip,
+            custom_vercel_ip: vercelIp,
+            custom_referrer: referer,
+            custom_is_bot: false,
+            custom_has_javascript: false,
+          },
+          anonymousId: growthBookAnonymousId,
+        })
+      )
     }
   }
 
