@@ -55,7 +55,7 @@ export default function DocsCtaSection() {
                   <TrackingLink
                     href={step.href}
                     clickType="Nav Click"
-                    clickName="CTA Step Link"
+                    clickName={step.clickName}
                     clickText={step.title}
                     clickLocation={SECTION_NAME}
                     className="text-inherit no-underline hover:underline"

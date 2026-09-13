@@ -287,22 +287,28 @@ export const INTRO_SECTIONS: IntroSectionData[] = [
 ]
 
 // CTA Section
+// `clickName` names the action, so keep it reusable across the site. Step 1
+// points at /teams/, so it uses `Sign Up Button` and joins the signup funnel.
+// The other steps share one name and differ by `clickText`.
 export const CTA_STEPS = [
   {
     title: 'Sign-up to SigNoz Cloud',
     href: '/teams/',
+    clickName: 'Sign Up Button',
     subtitle: 'Or self-host SigNoz',
     subtitleHref: '/docs/install/self-host/',
   },
   {
     title: 'Instrument your application',
     href: '/docs/instrumentation/',
+    clickName: 'CTA Step Link',
     subtitle: 'Or instruct your agent to do it for you',
     subtitleHref: '/docs/ai/agent-skills/',
   },
   {
     title: 'Explore your data',
     href: '/docs/apm-and-distributed-tracing/application-details/',
+    clickName: 'CTA Step Link',
     subtitle: 'Or set up extensive o11y at SigNoz.',
   },
 ]

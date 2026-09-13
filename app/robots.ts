@@ -2,8 +2,10 @@ import { MetadataRoute } from 'next'
 import siteMetadata from '@/data/siteMetadata'
 
 /**
- * AI crawlers that read pages to answer and cite, as opposed to training-only
- * crawlers such as CCBot. Every entry here is observed in our own request logs.
+ * AI user agents that read pages to answer and cite. Training-only crawlers
+ * such as CCBot are not in this list. Most appear in our request logs, but
+ * Google-Extended does not: Google reads it from robots.txt as a policy token
+ * and sends no requests with it.
  */
 const AI_CRAWLERS = [
   'GPTBot',
@@ -36,9 +38,9 @@ export default function robots(): MetadataRoute.Robots {
         disallow: '/resource-center',
       },
       {
-        // Named explicitly so the policy is stated rather than inferred from
-        // the wildcard. These crawlers must reach the docs to cite SigNoz;
-        // blocking one means that assistant cannot reference us at all.
+        // The wildcard rule already allows these agents. This group states the
+        // policy, so nobody has to infer it. If we block one, that assistant
+        // cannot cite SigNoz at all.
         userAgent: AI_CRAWLERS,
         allow: '/',
         disallow: '/resource-center',

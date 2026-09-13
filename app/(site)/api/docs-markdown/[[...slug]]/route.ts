@@ -30,8 +30,8 @@ export async function GET(request: Request, props: { params: Promise<{ slug?: st
   const doc = await fetchDocBySlug(slug)
 
   if (!doc) {
-    // Legacy slugs redirect as HTML but reach this API unresolved, so mirror
-    // the HTML redirect instead of 404-ing a URL the site still serves.
+    // A legacy slug reaches this API unresolved, because Next applies the
+    // redirects before the rewrite. Follow the HTML redirect instead of a 404.
     const canonical = await resolveCanonicalDocsMarkdownPath(request, slug)
     if (canonical) {
       return Response.redirect(new URL(canonical, request.url), 308)

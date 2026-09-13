@@ -71,19 +71,11 @@ const CopyCell = ({ text }: { text: string }) => {
 }
 
 const RegionTable = () => {
-  const { regions, isLoading } = useRegion()
+  const { regions } = useRegion()
 
-  // The context seeds the built-in regions, so the skeleton only applies if
-  // there is genuinely nothing to draw. Gating on isLoading alone would leave
-  // the server-rendered HTML without a single region value in it.
-  if (isLoading && regions.length === 0) {
-    return (
-      <div className="w-full overflow-x-auto">
-        <div className="h-32 w-full animate-pulse rounded bg-signoz_slate-400" />
-      </div>
-    )
-  }
-
+  // RegionContext seeds FALLBACK_REGIONS and never empties them, so there is
+  // always a row to draw and no skeleton is needed. If the table waited on
+  // isLoading, the server HTML would carry no region values.
   const tableData = regionTableRows(regions)
 
   return (

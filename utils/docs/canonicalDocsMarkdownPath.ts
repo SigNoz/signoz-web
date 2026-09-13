@@ -2,18 +2,18 @@ import siteMetadata from '@/data/siteMetadata'
 import { servesMarkdownAlternate } from '@/utils/agentMarkdownRouting'
 
 /**
- * Docs redirects live in next.config.js and are applied by Next before
- * middleware runs. A markdown request never benefits from them: the proxy
- * rewrites `/docs/<slug>.md` straight to the docs markdown API, so a legacy
- * slug that resolves fine as HTML 404s as markdown.
+ * Next applies the docs redirects in next.config.js before middleware runs, so
+ * a markdown request never reaches them. The proxy rewrites `/docs/<slug>.md`
+ * straight to the docs markdown API, and a legacy slug that resolves as HTML
+ * returns 404 as markdown.
  *
- * Rather than duplicate several hundred redirect rules here, ask the site
- * itself where the HTML page went and reuse the answer. Only runs when the slug
- * misses, so the happy path pays nothing.
+ * This module asks the site where the HTML page went instead of copying several
+ * hundred redirect rules. It runs only when the slug misses, so the happy path
+ * costs nothing.
  */
 
-// Trailing-slash normalisation costs a hop of its own, so allow headroom
-// beyond the one or two real redirects a chain usually has.
+// Trailing-slash normalization costs a hop, so allow room beyond the one or
+// two real redirects in a chain.
 const MAX_HOPS = 5
 
 const REDIRECT_STATUSES = new Set([301, 302, 307, 308])
@@ -28,10 +28,10 @@ const trustedHosts = (): Set<string> => {
 }
 
 /**
- * Origin to self-fetch from. The incoming host is only trusted when it is one
- * of our own deployments, so a spoofed Host header cannot point the lookup at
- * an arbitrary server. Staging is included deliberately: resolving its
- * redirects against production would answer with rules staging does not have.
+ * The origin to self-fetch from. Trust the incoming host only when it is one of
+ * our deployments, so a spoofed Host header cannot point the lookup at another
+ * server. Staging is in the list on purpose. Production would answer with
+ * redirect rules that staging does not have.
  */
 const resolveSelfOrigin = (request: Request): string => {
   const host =
@@ -54,18 +54,23 @@ const resolveSelfOrigin = (request: Request): string => {
 
 const stripTrailingSlash = (pathname: string): string => pathname.replace(/\/+$/, '') || '/'
 
+// The timeout applies to each hop, not to the whole walk. If the origin stalls,
+// the lookup fails and the request returns 404.
+const HOP_TIMEOUT_MS = 3000
+
 const headOrNull = (url: string): Promise<Response | null> =>
   fetch(url, {
     method: 'HEAD',
     headers: { Accept: 'text/html' },
     redirect: 'manual',
     cache: 'no-store',
+    signal: AbortSignal.timeout(HOP_TIMEOUT_MS),
   }).catch(() => null)
 
 /**
- * The markdown URL for a path the redirect chain landed on. Docs paths and any
- * other page with a markdown twin get `.md`; anything else resolves to the page
- * itself, which beats 404-ing a URL the site still serves.
+ * The markdown URL for the path the redirect chain landed on. A docs path, or
+ * any other page with a markdown twin, gets `.md`. Anything else resolves to
+ * the page itself, because the site still serves that URL.
  */
 const markdownPathFor = (pathname: string): string => {
   const normalized = stripTrailingSlash(pathname)
@@ -78,9 +83,9 @@ const markdownPathFor = (pathname: string): string => {
 }
 
 /**
- * Follow the HTML redirect chain for a docs slug and return the URL a markdown
- * request should be sent to, or null when nothing moves it. Redirects that
- * leave the docs tree are preserved rather than dropped.
+ * Follow the HTML redirect chain for a docs slug. Return the URL to send the
+ * markdown request to, or null when nothing moves the slug. A redirect that
+ * leaves the docs tree is kept.
  */
 export async function resolveCanonicalDocsMarkdownPath(
   request: Request,
@@ -88,8 +93,8 @@ export async function resolveCanonicalDocsMarkdownPath(
 ): Promise<string | null> {
   const origin = resolveSelfOrigin(request)
   const start = `/docs/${slug}`
-  // Raw pathnames, so a trailing-slash hop is followed rather than mistaken
-  // for a cycle. Only a genuine repeat stops the walk.
+  // Raw pathnames, so a trailing-slash hop counts as a hop and not as a cycle.
+  // Only a real repeat stops the walk.
   const seen = new Set<string>([start])
   let current = start
 
@@ -106,8 +111,8 @@ export async function resolveCanonicalDocsMarkdownPath(
       break
     }
 
-    // No /docs/ redirect leaves the origin today. If one ever does, send the
-    // client off-site rather than keeping the path and serving it as ours.
+    // No /docs/ redirect leaves the origin today. If one does, send the client
+    // off-site. Do not keep the path and serve it as ours.
     if (target.origin !== new URL(origin).origin) return target.toString()
 
     const next = target.pathname

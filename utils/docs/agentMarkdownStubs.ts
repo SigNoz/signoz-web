@@ -450,8 +450,9 @@ const createKnownComponentStubs = (
   },
   TroubleshootingWizard: createTroubleshootingWizardStub(),
   RegionTable: () => {
-    // The rendered table is client-side, so agents reading markdown get the
-    // built-in region list here rather than a pointer to data they cannot see.
+    // The rendered table is client-side, so this stub prints the built-in
+    // region list. A pointer to the rendered page would name data that agents
+    // cannot see.
     const columns = ['Name', 'Cloud Provider', 'Cloud Region', 'Ingestion Endpoint']
     return React.createElement(
       'table',
@@ -475,8 +476,8 @@ const createKnownComponentStubs = (
             React.createElement('td', null, row.name),
             React.createElement('td', null, row.provider.toUpperCase()),
             React.createElement('td', null, row.cloudRegion),
-            // Bare URLs get their colon escaped inside a table cell; code spans
-            // keep the value literal so it can be copied or matched as-is.
+            // A bare URL gets its colon escaped inside a table cell. A code
+            // span keeps the value literal, so a reader can copy or match it.
             React.createElement('td', null, React.createElement('code', null, row.dns))
           )
         )

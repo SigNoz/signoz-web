@@ -64,8 +64,8 @@ export function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname
 
   // Agents reach markdown two ways, and the Accept header is the rarer one.
-  // Logging only `prefersMarkdown` counts the `.md` suffix as an HTML request,
-  // so track both to make the markdown-vs-HTML split measurable.
+  // `prefersMarkdown` alone logs a `.md` request as HTML, so log both and keep
+  // the markdown split measurable.
   const hasMarkdownSuffix = hasMarkdownExtension(pathname)
   const wantsMarkdown = prefersMarkdown || hasMarkdownSuffix
 

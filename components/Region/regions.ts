@@ -1,9 +1,9 @@
 /**
  * Region shapes and the built-in region list.
  *
- * Kept out of RegionContext so server code can read it too: the context is a
- * client component, and the docs markdown export needs the same rows to render
- * the region table without a browser.
+ * This file sits outside RegionContext so server code can read it. The context
+ * is a client component, and the docs markdown export needs the same rows to
+ * render the region table without a browser.
  */
 
 export interface Cluster {
@@ -18,9 +18,9 @@ export interface RegionData {
 }
 
 /**
- * Seeds the region table and dropdown before the control plane responds, and
- * stands in when that request fails. Keep in sync with the control plane's
- * /regions payload.
+ * Seeds the region table and the dropdown before the control plane responds,
+ * and stands in when that request fails. Keep this list in sync with the
+ * /regions payload from the control plane.
  */
 export const FALLBACK_REGIONS: RegionData[] = [
   {

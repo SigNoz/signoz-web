@@ -55,9 +55,9 @@ const LLM_STARTER_ROUTE_MATCHERS: Array<(route: string) => boolean> = [
   (route) => route === '/docs/migration/migrate-from-opentelemetry-to-signoz',
   (route) => route === '/docs/migration/migrate-from-signoz-self-host-to-signoz-cloud',
   (route) => /^\/docs\/instrumentation(?:\/|$)/.test(route),
-  // Each matcher contributes only its first match, so the prefix above yields
-  // the overview page alone. Agents arriving via llms.txt ask for a language,
-  // so name the core four explicitly.
+  // Each matcher contributes only its first match, so the prefix above returns
+  // the overview page alone. Agents that arrive through llms.txt ask for a
+  // language, so name the core four here.
   (route) => route === '/docs/instrumentation/opentelemetry-python',
   (route) => route === '/docs/instrumentation/javascript/opentelemetry-nodejs',
   (route) => route === '/docs/instrumentation/opentelemetry-golang',
